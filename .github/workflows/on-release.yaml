@@ -1,0 +1,34 @@
+---
+name: On Release
+
+on:
+  release:
+    types:
+      - published
+
+jobs:
+  build-and-push:
+    uses: builderhub/actions/.github/workflows/buildah-build-push-workflow.yaml@v0.1.0-beta.2
+    with:
+      image: builderhub/yamlfile
+      tags: latest ${{ github.sha }} ${{ github.event.release.tag_name }}
+      containerfiles: yamlfile/cmd/yamlfile-frontend/Dockerfile
+      context: .
+      registry: ghcr.io
+      push: true
+      annotations: |
+        org.opencontainers.image.source=https://github.com/builderhub/yamlfile
+        org.opencontainers.image.description=BuildKit frontend for intuitive, parallel, secret-aware multi-target Yamlfiles (v1alpha1)
+        org.opencontainers.image.licenses=MIT
+        org.opencontainers.image.authors=BuilderHub
+        org.opencontainers.image.url=https://github.com/builderhub/yamlfile
+        org.opencontainers.image.documentation=https://github.com/builderhub/yamlfile/blob/main/README.md
+        org.opencontainers.image.vendor=BuilderHub
+        org.opencontainers.image.version=${{ github.event.release.tag_name }}
+        org.opencontainers.image.revision=${{ github.sha }}
+    secrets:
+      REGISTRY_USERNAME: ${{ github.actor }}
+      REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+    permissions:
+      contents: read
+      packages: write
