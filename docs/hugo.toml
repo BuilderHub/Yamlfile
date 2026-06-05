@@ -1,0 +1,27 @@
+baseURL = 'https://builderhub.github.io/yamlfile/'
+languageCode = 'en-us'
+title = 'yamlfile'
+theme = ''  # default layout for first cut; can add via module later
+
+# Enable useful features for technical docs
+enableGitInfo = true
+pygmentsCodeFences = true
+pygmentsStyle = 'monokai'
+
+[params]
+  description = 'BuildKit frontend (v1alpha1) for intuitive, declarative, parallel, multi-file, secret-aware builds.'
+  author = 'BuilderHub'
+  # Useful for "edit this page" links if we add partials later
+  github_repo = 'https://github.com/BuilderHub/yamlfile'
+  github_branch = 'main'
+
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true  # allow raw HTML in markdown if needed for examples
+  [markup.tableOfContents]
+    startLevel = 2
+    endLevel = 3
+
+[outputs]
+  home = ["HTML", "RSS"]
