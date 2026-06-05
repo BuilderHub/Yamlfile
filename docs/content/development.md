@@ -44,7 +44,7 @@ make docs-serve  # live reload at http://localhost:1313
 
 - Push to `main` that touches `docs/**` (or the workflow file) triggers `.github/workflows/pages.yaml`.
 - It runs `nix develop --command make docs` (exact same env as your machine) then uses the official `actions/deploy-pages` flow.
-- The published site is at the `baseURL` declared in `docs/hugo.toml` (`https://builderhub.github.io/yamlfile/`).
+- The published site is at the `baseURL` declared in `docs/hugo.toml` (`https://builderhub.github.io/Yamlfile/`).
 
 ## Code layout (relevant to docs)
 

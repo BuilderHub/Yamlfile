@@ -32,7 +32,7 @@ docs: ## Build Hugo documentation site (output: docs/public)
 	hugo -s $(DOCS_DIR) --gc --minify
 
 docs-serve: ## Serve Hugo docs locally with live reload (http://localhost:1313)
-	hugo server -s $(DOCS_DIR) -D --disableFastRender --noHTTPCache
+	hugo server -s $(DOCS_DIR) -D --disableFastRender --noHTTPCache --baseURL http://localhost:1313/
 
 docker-build: ## Build yamlfile frontend image (current arch) using buildx
 	# Build context is the yamlfile module root (Dockerfile does cd /src inside the mount).

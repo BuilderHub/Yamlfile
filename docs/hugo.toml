@@ -1,4 +1,4 @@
-baseURL = 'https://builderhub.github.io/yamlfile/'
+baseURL = 'https://builderhub.github.io/Yamlfile/'
 locale = 'en-us'
 title = 'yamlfile'
 
@@ -13,7 +13,7 @@ disableKinds = ["taxonomy", "term"]
   description = 'BuildKit frontend (v1alpha1) for intuitive, declarative, parallel, multi-file, secret-aware builds.'
   author = 'BuilderHub'
   # Useful for "edit this page" links if we add partials later
-  github_repo = 'https://github.com/BuilderHub/yamlfile'
+  github_repo = 'https://github.com/BuilderHub/Yamlfile'
   github_branch = 'main'
 
 [markup]
