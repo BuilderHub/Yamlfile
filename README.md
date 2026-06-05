@@ -6,7 +6,13 @@ Inspired by the complexity of [coreweave/ml-containers](https://github.com/corew
 
 ## Status
 
-First iteration (v1alpha1). Basic targets + run/copy work; full script/secrets/parallel/multi-file + docs coming in this implementation.
+First iteration (v1alpha1). Core: explicit targets, run (command / inline / script), copy, per-run secrets (file + env forms), env: convenience step, dependency graph + cycle detection + reachable ordering. Multi-file orchestration (`builds:` + `component:target`), platform overrides, and intra-build parallel execution are planned (grammar/graph prep exists for forward-compat).
+
+## Documentation
+
+Full docs (syntax, features, examples, getting started) are published via GitHub Pages:
+
+https://builderhub.github.io/yamlfile/
 
 ## Usage
 

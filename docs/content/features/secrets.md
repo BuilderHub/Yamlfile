@@ -3,7 +3,7 @@ title: "Secrets (file and env forms)"
 weight: 20
 ---
 
-# Secrets
+
 
 yamlfile supports BuildKit's native secret mounts in a declarative way.
 
@@ -37,6 +37,6 @@ docker buildx build ... \
 
 Or using the `on-release.yaml` / `on-pr.yaml` patterns with the reusable buildah workflow if you are publishing the image from CI.
 
-See the [Syntax Reference](/syntax-reference#secrets-secretmount) for the full `SecretMount` options (`optional`, `mode`, `uid`, `gid`).
+See the [Syntax Reference]({{< relref "/syntax-reference#secrets-secretmount" >}}) for the full `SecretMount` options (`optional`, `mode`, `uid`, `gid`).
 
 Secrets are **never** present in the final image layers or history when used correctly.

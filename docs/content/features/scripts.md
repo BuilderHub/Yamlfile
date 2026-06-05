@@ -3,7 +3,7 @@ title: "run.script — Baked-in Script Execution"
 weight: 10
 ---
 
-# run.script — Baked-in Script Execution
+
 
 One of yamlfile's most useful "baked-in" features is `run.script`.
 
@@ -45,4 +45,4 @@ yamlfile:
 
 Cleaner, and the frontend guarantees the temporary mount semantics.
 
-See also: [Secrets](/features/secrets) (often used together with scripts that need credentials).
+See also: [Secrets]({{< relref "/features/secrets" >}}) (often used together with scripts that need credentials).

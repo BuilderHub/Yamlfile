@@ -1,0 +1,80 @@
+# syntax=ghcr.io/builderhub/yamlfile:latest
+#
+# yamlfile v1alpha1 multi-target example.
+# - Independent targets (prep, test) can be prepared without artificial ordering.
+# - Sibling from: + copy: for clean data flow.
+# - run.script: the frontend securely loads + mounts (see scripts/prepare.sh).
+# - run.env + top-level env: step for image config.
+# - Secrets: per-run only (supply with docker buildx --secret ...).
+#
+# Run (no --target needed because the leaf target is named "default"):
+#   docker buildx build -f examples/multi-target.Yamlfile \
+#     --build-arg BUILDKIT_SYNTAX=ghcr.io/builderhub/yamlfile:latest \
+#     --output type=local,dest=/tmp/out \
+#     .
+#   cat /tmp/out/final.txt
+#   ls /tmp/out/out/  # copied artifacts from the previous targets live under /out/ inside the exported fs
+#
+# With a secret (file form, optional):
+#   --secret id=token,src=$HOME/.dummy-token-for-build
+#
+# (The secret is only visible to the "build" target in this example because the secret is declared only under that run.)
+
+apiVersion: v1alpha1
+
+targets:
+  prep:
+    from: alpine:3.19
+    steps:
+      - run:
+          script: examples/scripts/prepare.sh
+      # (no self-copy; final will copy the /prep.txt artifact out)
+
+  build:
+    from: alpine:3.19
+    steps:
+      - env:
+          vars:
+            BUILD_VERSION: "1.2.3"
+            BUILD_DATE: "2026-06-05"
+      - run:
+          inline: |
+            set -e
+            mkdir -p /app
+            echo "building v${BUILD_VERSION} on $(uname -m)..."
+            echo "version=${BUILD_VERSION}" > /app/meta.txt
+            echo "date=${BUILD_DATE}" >> /app/meta.txt
+          env:
+            CGO_ENABLED: "0"
+          # Example of per-run secret (file form). Supply at build time.
+          # secrets:
+          #   - id: token
+          #     target: /run/secrets/token
+          #     optional: true
+
+  test:
+    from: alpine:3.19
+    steps:
+      - run:
+          command: echo "tests passed" > /test-result.txt
+
+  default:
+    from: alpine:3.19
+    steps:
+      - copy:
+          from: prep
+          src: ["/prep.txt"]
+          dest: "/out/"
+      - copy:
+          from: build
+          src: ["/app/meta.txt"]
+          dest: "/out/"
+      - copy:
+          from: test
+          src: ["/test-result.txt"]
+          dest: "/out/"
+      - run:
+          command: |
+            cat /out/prep.txt /out/meta.txt /out/test-result.txt > /final.txt
+            echo "=== final artifact ==="
+            cat /final.txt

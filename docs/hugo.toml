@@ -1,12 +1,13 @@
 baseURL = 'https://builderhub.github.io/yamlfile/'
-languageCode = 'en-us'
+locale = 'en-us'
 title = 'yamlfile'
-theme = ''  # default layout for first cut; can add via module later
 
 # Enable useful features for technical docs
 enableGitInfo = true
 pygmentsCodeFences = true
 pygmentsStyle = 'monokai'
+
+disableKinds = ["taxonomy", "term"]
 
 [params]
   description = 'BuildKit frontend (v1alpha1) for intuitive, declarative, parallel, multi-file, secret-aware builds.'
@@ -25,3 +26,5 @@ pygmentsStyle = 'monokai'
 
 [outputs]
   home = ["HTML", "RSS"]
+  section = ["HTML", "RSS"]
+  page = ["HTML"]

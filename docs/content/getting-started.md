@@ -3,7 +3,7 @@ title: "Getting Started"
 weight: 10
 ---
 
-# Getting Started with yamlfile
+
 
 ## Prerequisites
 
@@ -36,6 +36,15 @@ docker buildx build -f MyYamlfile.yaml \
   .
 ```
 
+If your Yamlfile defines multiple top-level targets and you don't want the default (first reachable), pass `--target`:
+
+```bash
+docker buildx build -f MyYamlfile.yaml \
+  --target myapp \
+  --output type=image,name=myapp,push=false \
+  .
+```
+
 ## Local Development / Custom Build
 
 From the yamlfile directory:
@@ -54,7 +63,7 @@ docker buildx build -f examples/minimal.Yamlfile \
   .
 ```
 
-See the [Makefile](/Makefile) targets (`make docker-build`, `make docker-build-multiarch`) for the canonical commands used in CI/release. (Run `make` from the yamlfile directory, or `make -C /path/to/yamlfile ...`.)
+See the `Makefile` targets (`make docker-build`, `make docker-build-multiarch`) for the canonical commands used in CI/release. (Run `make` from the yamlfile directory, or `make -C /path/to/yamlfile ...`.) The source is at the root of the repository.
 
 ## Supplying Secrets
 
@@ -82,10 +91,10 @@ docker buildx build ... \
   --secret id=netrc,src=$HOME/.netrc
 ```
 
-See the [Secrets](/features/secrets) page for details on file vs. env forms and options (`optional`, `mode`, `uid`, `gid`).
+See the [Secrets]({{< relref "/features/secrets" >}}) page for details on file vs. env forms and options (`optional`, `mode`, `uid`, `gid`).
 
 ## Next Steps
 
-- Read the [Syntax Reference](/syntax-reference) for the full v1alpha1 grammar.
-- Look at [Examples](/examples).
+- Read the [Syntax Reference]({{< relref "/syntax-reference" >}}) for the full v1alpha1 grammar.
+- Look at [Examples]({{< relref "/examples" >}}).
 - See how the frontend implements script injection and secret mounts in the source (`pkg/convert/`).

@@ -2,12 +2,9 @@
 title: "Features"
 weight: 30
 ---
+- [Scripts (run.script)]({{< relref "/features/scripts" >}})
+- [Secrets]({{< relref "/features/secrets" >}})
+- [Multi-file & Copy (grammar; runtime planned)]({{< relref "/features/multi-file" >}})
+- [Parallelism & Graphs]({{< relref "/features/parallelism" >}})
 
-# Features
-
-- [Scripts (run.script)](/features/scripts)
-- [Secrets](/features/secrets)
-- [Copy & Multi-Target](/features/copy-and-multi-target)
-- [Parallelism & Graphs](/features/parallelism)
-
-See the [Syntax Reference](/syntax-reference) for the full grammar.
+See the [Syntax Reference]({{< relref "/syntax-reference" >}}) for the full grammar.
