@@ -1,0 +1,8 @@
+<footer class="site-footer">
+  <span>&copy; {{ .Site.Params.author | default "BuilderHub" }}</span>
+  {{ with .Site.Params.github_repo }}· <a href="{{ . }}">GitHub</a>{{ end }}
+  {{ with .File }}
+    · <a href="{{ $.Site.Params.github_repo }}/blob/{{ $.Site.Params.github_branch | default "main" }}/docs/content/{{ .Path }}">Edit this page</a>
+  {{ end }}
+  · <a href="{{ .Site.BaseURL }}sitemap.xml">Sitemap</a>
+</footer>

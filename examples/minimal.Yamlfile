@@ -1,0 +1,15 @@
+# syntax=ghcr.io/builderhub/yamlfile:dev
+
+# yamlfile v1alpha1 minimal smoke test
+apiVersion: v1alpha1
+
+targets:
+  hello:
+    from: alpine:3.19
+    steps:
+      - run:
+          command: echo "hello from yamlfile v1alpha1" > /msg.txt
+      - run:
+          inline: |
+            echo "inline shell logic works" >> /msg.txt
+      # script: will be added in impl; for now the above exercises run + mkfile path
