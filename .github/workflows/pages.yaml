@@ -43,6 +43,9 @@ jobs:
       - name: Build with Hugo (via nix dev shell)
         run: nix develop --command make docs
 
+      - name: Add .nojekyll (recommended for GitHub Pages)
+        run: touch docs/public/.nojekyll
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
