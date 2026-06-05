@@ -12,7 +12,7 @@ First iteration (v1alpha1). Core: explicit targets, run (command / inline / scri
 
 Full docs (syntax, features, examples, getting started) are published via GitHub Pages:
 
-https://builderhub.github.io/yamlfile/
+https://builderhub.github.io/Yamlfile/
 
 ## Usage
 
