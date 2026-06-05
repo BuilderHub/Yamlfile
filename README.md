@@ -11,15 +11,14 @@ First iteration (v1alpha1). Basic targets + run/copy work; full script/secrets/p
 ## Usage
 
 ```bash
-# From the BuilderHub *repo root* (the Dockerfile needs sibling buildkit-hive for the replace):
 docker buildx build \
-  -f yamlfile/examples/minimal.Yamlfile \
+  -f examples/minimal.Yamlfile \
   --build-arg BUILDKIT_SYNTAX=ghcr.io/builderhub/yamlfile:dev \
   --output type=local,dest=/tmp/out \
   .
 ```
 
-(When inside `yamlfile/` use `make docker-build` or adjust context to `..`.)
+(When using the local dev image, see Development section below.)
 
 Or with a remote registry image once published:
 
@@ -55,7 +54,7 @@ yamlfile makes the graph, the parallelism, the script injection, and the secret 
 ## Development
 
 ```bash
-nix develop   # or from root
+nix develop
 make test
 docker buildx build -f cmd/yamlfile-frontend/Dockerfile -t localhost:5000/yamlfile:dev --load .
 docker buildx build -f examples/minimal.Yamlfile --build-arg BUILDKIT_SYNTAX=localhost:5000/yamlfile:dev --output type=local,dest=/tmp/out .

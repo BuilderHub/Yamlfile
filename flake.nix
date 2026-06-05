@@ -33,10 +33,10 @@
           ];
           shellHook = ''
             echo "yamlfile dev shell (Go $(go version))"
-            echo "IMPORTANT: run docker buildx commands from the *BuilderHub repo root* (not inside yamlfile/)"
-            echo "  docker buildx build -f yamlfile/cmd/yamlfile-frontend/Dockerfile -t localhost:5000/yamlfile:dev --load ."
-            echo "  docker buildx build -f yamlfile/examples/minimal.Yamlfile --build-arg BUILDKIT_SYNTAX=localhost:5000/yamlfile:dev --output type=local,dest=/tmp/out ."
-            echo "Or use 'make -C yamlfile docker-build' (handles context)."
+            echo "Run docker buildx from the yamlfile/ directory (or use make):"
+            echo "  docker buildx build -f cmd/yamlfile-frontend/Dockerfile -t localhost:5000/yamlfile:dev --load ."
+            echo "  docker buildx build -f examples/minimal.Yamlfile --build-arg BUILDKIT_SYNTAX=localhost:5000/yamlfile:dev --output type=local,dest=/tmp/out ."
+            echo "Or: make docker-build"
             echo "Docs: make docs-serve (or nix develop --command hugo server -s docs)"
           '';
         };

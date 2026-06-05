@@ -25,7 +25,7 @@ EOT
 FROM base AS build
 RUN apk add --no-cache file
 ARG TARGETPLATFORM
-# yamlfile uses its own go.mod + replace (not the hive vendor tree), so clear vendor mode
+# yamlfile uses its own go.mod (clear any inherited -mod=vendor etc.)
 ENV GOFLAGS=
 RUN --mount=target=. --mount=type=cache,target=/root/.cache \
   --mount=target=/go/pkg/mod,type=cache \
@@ -33,7 +33,7 @@ RUN --mount=target=. --mount=type=cache,target=/root/.cache \
   set -e
   ldflags=$(cat /tmp/.ldflags)
   set -x
-  cd /src/yamlfile
+  cd /src
   CGO_ENABLED=0 xx-go build -o /yamlfile-frontend -ldflags "-d $ldflags" -tags "netgo static_build osusergo" ./cmd/yamlfile-frontend
   xx-verify --static /yamlfile-frontend
 EOT

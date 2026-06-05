@@ -1,5 +1,4 @@
 # yamlfile — BuildKit frontend Makefile
-# Follows BuilderHub patterns (see root Makefile, BUILD.md, AGENTS.md)
 
 REGISTRY ?= ghcr.io/builderhub
 TAG ?= dev
@@ -36,12 +35,12 @@ docs-serve: ## Serve Hugo docs locally with live reload (http://localhost:1313)
 	hugo server -s $(DOCS_DIR) -D --disableFastRender --noHTTPCache
 
 docker-build: ## Build yamlfile frontend image (current arch) using buildx
-	# Note: context must be monorepo root (for go replace ../buildkit-hive + ./yamlfile paths in Dockerfile)
+	# Build context is the yamlfile module root (Dockerfile does cd /src inside the mount).
 	docker buildx build \
 		-f cmd/yamlfile-frontend/Dockerfile \
 		-t $(IMAGE_NAME) \
 		--load \
-		..
+		.
 
 docker-build-multiarch: ## Build multi-arch image (push required for manifest)
 	docker buildx build \
@@ -49,7 +48,7 @@ docker-build-multiarch: ## Build multi-arch image (push required for manifest)
 		-t $(IMAGE_NAME) \
 		--platform linux/amd64,linux/arm64 \
 		--push \
-		..
+		.
 
 docker-push: docker-build ## Push current-arch image (use build-multiarch for real multi)
 	docker push $(IMAGE_NAME)

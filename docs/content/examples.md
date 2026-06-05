@@ -26,7 +26,7 @@ targets:
 Build it:
 
 ```bash
-docker buildx build -f yamlfile/examples/minimal.Yamlfile \
+docker buildx build -f examples/minimal.Yamlfile \
   --build-arg BUILDKIT_SYNTAX=ghcr.io/builderhub/yamlfile:latest \
   --output type=local,dest=/tmp/out \
   .

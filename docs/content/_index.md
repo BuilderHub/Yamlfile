@@ -12,9 +12,8 @@ Inspired by the complexity of [coreweave/ml-containers](https://github.com/corew
 ## Quick Start
 
 ```bash
-# From the BuilderHub *repo root*
 docker buildx build \
-  -f yamlfile/examples/minimal.Yamlfile \
+  -f examples/minimal.Yamlfile \
   --build-arg BUILDKIT_SYNTAX=ghcr.io/builderhub/yamlfile:latest \
   --output type=local,dest=/tmp/out \
   .

@@ -8,7 +8,7 @@ weight: 10
 ## Prerequisites
 
 - Docker with BuildKit enabled (Docker 23+ or `DOCKER_BUILDKIT=1`).
-- (Recommended for development) `nix develop` from the BuilderHub monorepo root.
+- (Recommended for development) `nix develop` (from the yamlfile directory).
 
 ## Using a Released Image
 
@@ -38,22 +38,23 @@ docker buildx build -f MyYamlfile.yaml \
 
 ## Local Development / Custom Build
 
+From the yamlfile directory:
+
 ```bash
-# From the BuilderHub monorepo root (so the Dockerfile can see ../buildkit-hive)
 docker buildx build \
-  -f yamlfile/cmd/yamlfile-frontend/Dockerfile \
+  -f cmd/yamlfile-frontend/Dockerfile \
   -t localhost:5000/yamlfile:dev \
   --load \
   .
 
-# Use your local image
-docker buildx build -f yamlfile/examples/minimal.Yamlfile \
+# Use your local image (context can be any dir with your Yamlfile; here "." for the example)
+docker buildx build -f examples/minimal.Yamlfile \
   --build-arg BUILDKIT_SYNTAX=localhost:5000/yamlfile:dev \
   --output type=local,dest=/tmp/out \
-  yamlfile
+  .
 ```
 
-See the [Makefile](/Makefile) targets (`make docker-build`, `make docker-build-multiarch`) for the canonical commands used in CI/release.
+See the [Makefile](/Makefile) targets (`make docker-build`, `make docker-build-multiarch`) for the canonical commands used in CI/release. (Run `make` from the yamlfile directory, or `make -C /path/to/yamlfile ...`.)
 
 ## Supplying Secrets
 
