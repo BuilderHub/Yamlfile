@@ -12,7 +12,7 @@ jobs:
     with:
       image: builderhub/yamlfile
       tags: latest ${{ github.sha }} ${{ github.event.release.tag_name }}
-      containerfiles: yamlfile/cmd/yamlfile-frontend/Dockerfile
+      containerfiles: cmd/yamlfile-frontend/Dockerfile
       context: .
       registry: ghcr.io
       push: true
