@@ -41,10 +41,12 @@ type BuildRef struct {
 // Step is a discriminated union for pipeline steps. New kinds can be added
 // without breaking old parsers (unknown Kind will error in v1alpha1 but is captured).
 type Step struct {
-	Run  *RunSpec  `yaml:"run,omitempty"`
-	Copy *CopySpec `yaml:"copy,omitempty"`
-	Env  *EnvSpec  `yaml:"env,omitempty"`
-	// Add Arg, Workdir, User, Label, Entrypoint, Cmd, Expose etc. as *XXXSpec
+	Run     *RunSpec     `yaml:"run,omitempty"`
+	Copy    *CopySpec    `yaml:"copy,omitempty"`
+	Env     *EnvSpec     `yaml:"env,omitempty"`
+	Arg     *ArgSpec     `yaml:"arg,omitempty"`
+	Workdir *WorkdirSpec `yaml:"workdir,omitempty"`
+	// Future: User, Label, Entrypoint, Cmd, Expose etc. as *XXXSpec
 	Extensions map[string]interface{} `yaml:",inline"`
 }
 
@@ -56,6 +58,7 @@ type RunSpec struct {
 	Script  string            `yaml:"script,omitempty"`  // path in context; frontend injects via Mkfile+mount
 	Env     map[string]string `yaml:"env,omitempty"`
 	Secrets []SecretMount     `yaml:"secrets,omitempty"`
+	Workdir string            `yaml:"workdir,omitempty"` // per-run working directory (transient; use workdir: step for persistent)
 	// mounts, network, security, etc. added later (additive)
 	Extensions map[string]interface{} `yaml:",inline"`
 }
@@ -85,5 +88,24 @@ type CopySpec struct {
 // EnvSpec is a convenience step (also doable via run.env, but clearer at target level).
 type EnvSpec struct {
 	Vars       map[string]string      `yaml:"vars,omitempty"`
+	Extensions map[string]interface{} `yaml:",inline"`
+}
+
+// ArgSpec declares build-time variables (the equivalent of Dockerfile ARG).
+// The value in the map is the default; it is overridden by a matching --build-arg
+// supplied at build time. Arg values participate in $VAR / ${VAR} expansion for
+// later env:, arg:, workdir:, and run.env values within the same target, and are
+// injected into the execution environment of subsequent run steps (but do not
+// appear in the final image ENV unless also set via an env: step).
+type ArgSpec struct {
+	Vars       map[string]string      `yaml:"vars,omitempty"`
+	Extensions map[string]interface{} `yaml:",inline"`
+}
+
+// WorkdirSpec sets the persistent working directory for the target (affects the
+// llb.State for subsequent steps and the exported image config.WorkingDir).
+// Per-run workdir can be set via run.workdir (does not persist after the run).
+type WorkdirSpec struct {
+	Path       string                 `yaml:"path"`
 	Extensions map[string]interface{} `yaml:",inline"`
 }

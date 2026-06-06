@@ -74,3 +74,45 @@ func containsHelper(s, sub string) bool {
 	}
 	return false
 }
+
+func TestLoad_AllowsArgAndWorkdirSteps(t *testing.T) {
+	y, err := Load([]byte(`
+apiVersion: v1alpha1
+targets:
+  t:
+    from: alpine
+    steps:
+      - arg:
+          vars:
+            FOO: "1"
+      - workdir:
+          path: /app
+      - env:
+          vars:
+            BAR: "2"
+      - run:
+          command: echo ok
+          workdir: /app/src
+`))
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	if len(y.Targets["t"].Steps) != 4 {
+		t.Errorf("expected 4 steps, got %d", len(y.Targets["t"].Steps))
+	}
+}
+
+func TestLoad_RejectsMixedStepKinds(t *testing.T) {
+	_, err := Load([]byte(`
+apiVersion: v1alpha1
+targets:
+  t:
+    from: alpine
+    steps:
+      - run: {command: "true"}
+        env: {vars: {X: "1"}}
+`))
+	if err == nil || !contains(err.Error(), "exactly one of") {
+		t.Errorf("expected 'exactly one of' error, got %v", err)
+	}
+}

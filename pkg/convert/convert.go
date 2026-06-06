@@ -1,7 +1,8 @@
 // Package convert implements translation of Yamlfile v1alpha1 specs into
 // BuildKit LLB. It handles target dependency graphs (for parallelism and
-// pruning), RUN/COPY/ENV steps, baked-in script loading (via temporary
-// scratch + readonly mounts), and secure secret mounts (file or env forms).
+// pruning), RUN/COPY/ENV/ARG/WORKDIR steps, $VAR/${VAR} expansion (via
+// buildkit shell lexer) for env/arg/workdir values, baked-in script loading
+// (via temporary scratch + readonly mounts), and secure secret mounts (file or env forms).
 package convert
 
 //revive:disable:exported
@@ -10,10 +11,12 @@ package convert
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/builderhub/yamlfile/pkg/spec/v1alpha1"
 	"github.com/moby/buildkit/client/llb"
+	"github.com/moby/buildkit/frontend/dockerfile/shell"
 	"github.com/moby/buildkit/frontend/dockerui"
 	gwclient "github.com/moby/buildkit/frontend/gateway/client"
 	ocispecs "github.com/opencontainers/image-spec/specs-go/v1"
@@ -116,22 +119,110 @@ func ToLLB(ctx context.Context, y *v1alpha1.Yamlfile, target string, opt Convert
 		st := base
 		img := emptyImage(opt.Platform)
 
+		// Per-target variable context for $VAR / ${VAR} expansion inside env/arg/workdir values.
+		// Seeded from CLI build args (highest precedence for expansion), our synthetic base PATH,
+		// and (for sibling from:) the exact final ENVs + WorkingDir of the prior target.
+		// This makes documented patterns like PATH: /app/bin:${PATH} and cross-arg/env refs work.
+		currentVars := map[string]string{}
+		argScope := map[string]string{} // build args + arg: defaults; injected into run execs (not persisted to image ENV)
+		for k, v := range opt.BuildArgs {
+			currentVars[k] = v
+			argScope[k] = v
+		}
+		for _, e := range img.Config.Env {
+			if k, v := splitEnv(e); k != "" {
+				currentVars[k] = v
+			}
+		}
+		if isT, k := resolveBase(t.From, y.Targets); isT && k != "scratch" {
+			if pimg, ok := images[k]; ok && pimg != nil {
+				// Inherit exact envs for expansion and make the child's starting image config correct.
+				img.Config.Env = append([]string{}, pimg.Config.Env...)
+				img.Config.WorkingDir = pimg.Config.WorkingDir
+				for _, e := range pimg.Config.Env {
+					if key, val := splitEnv(e); key != "" {
+						currentVars[key] = val
+					}
+				}
+			}
+		}
+
 		for _, step := range t.Steps {
 			if step.Run != nil {
-				st, img = dispatchRun(st, img, step.Run, opt)
+				// Expand per-run env values and workdir using the context at this point in the target.
+				// We operate on a copy so we never mutate the parsed spec.
+				r := step.Run
+				rCopy := *r
+				if len(r.Env) > 0 {
+					rCopy.Env = make(map[string]string, len(r.Env))
+					for k, v := range r.Env {
+						ev, err := expand(v, currentVars)
+						if err != nil {
+							return nil, fmt.Errorf("expand env %s for run in target %s: %w", k, name, err)
+						}
+						rCopy.Env[k] = ev
+						currentVars[k] = ev // run.env persists today; keep expansion context in sync
+					}
+				}
+				if r.Workdir != "" {
+					wd, err := expand(r.Workdir, currentVars)
+					if err != nil {
+						return nil, fmt.Errorf("expand workdir for run in target %s: %w", name, err)
+					}
+					rCopy.Workdir = wd
+				}
+				st, img = dispatchRun(st, img, &rCopy, opt, argScope)
 			}
 			if step.Copy != nil {
+				// Expand copy.from for symmetry (e.g. from: a build arg). No impact on static dep graph.
+				c := step.Copy
+				fromRef := c.From
+				if c.From != "" {
+					if f, err := expand(c.From, currentVars); err == nil && f != "" {
+						fromRef = f
+					}
+				}
+				c2 := *c
+				c2.From = fromRef
 				var err error
-				st, err = dispatchCopy(st, step.Copy, states, opt)
+				st, err = dispatchCopy(st, &c2, states, opt)
 				if err != nil {
 					return nil, err
 				}
 			}
 			if step.Env != nil {
 				for k, v := range step.Env.Vars {
-					st = st.AddEnv(k, v)
-					img.Config.Env = append(img.Config.Env, k+"="+v)
+					ev, err := expand(v, currentVars)
+					if err != nil {
+						return nil, fmt.Errorf("expand env %s in target %s: %w", k, name, err)
+					}
+					st = st.AddEnv(k, ev)
+					img.Config.Env = upsertEnv(img.Config.Env, k, ev)
+					currentVars[k] = ev
 				}
+			}
+			if step.Arg != nil {
+				// arg: provides defaults (only if not supplied via CLI BuildArgs) and participates in expansion.
+				// Values are available for later ${} expansion and are injected into subsequent run execs.
+				for k, d := range step.Arg.Vars {
+					if _, ok := currentVars[k]; !ok {
+						dv, err := expand(d, currentVars)
+						if err != nil {
+							return nil, fmt.Errorf("expand arg %s in target %s: %w", k, name, err)
+						}
+						currentVars[k] = dv
+						argScope[k] = dv
+					}
+				}
+			}
+			if step.Workdir != nil {
+				p := step.Workdir.Path
+				ep, err := expand(p, currentVars)
+				if err != nil {
+					return nil, fmt.Errorf("expand workdir in target %s: %w", name, err)
+				}
+				st = st.Dir(ep)
+				img.Config.WorkingDir = ep
 			}
 		}
 
@@ -146,7 +237,7 @@ func ToLLB(ctx context.Context, y *v1alpha1.Yamlfile, target string, opt Convert
 	return res, nil
 }
 
-func dispatchRun(st llb.State, img *ocispecs.Image, r *v1alpha1.RunSpec, opt ConvertOpt) (llb.State, *ocispecs.Image) {
+func dispatchRun(st llb.State, img *ocispecs.Image, r *v1alpha1.RunSpec, opt ConvertOpt, extraExecEnvs map[string]string) (llb.State, *ocispecs.Image) {
 	var args []string
 	scriptContent, hasScript := opt.Scripts[r.Script]
 
@@ -162,7 +253,13 @@ func dispatchRun(st llb.State, img *ocispecs.Image, r *v1alpha1.RunSpec, opt Con
 			llb.Args([]string{"/bin/sh", scriptPath}),
 			llb.AddMount(scriptPath, scriptSt, llb.SourcePath(scriptPath), llb.Readonly),
 		}
+		if r.Workdir != "" {
+			runOpts = append(runOpts, llb.Dir(r.Workdir))
+		}
 		for k, v := range r.Env {
+			runOpts = append(runOpts, llb.AddEnv(k, v))
+		}
+		for k, v := range extraExecEnvs {
 			runOpts = append(runOpts, llb.AddEnv(k, v))
 		}
 		for _, sm := range r.Secrets {
@@ -182,7 +279,13 @@ func dispatchRun(st llb.State, img *ocispecs.Image, r *v1alpha1.RunSpec, opt Con
 	}
 
 	runOpts := []llb.RunOption{llb.Args(args)}
+	if r.Workdir != "" {
+		runOpts = append(runOpts, llb.Dir(r.Workdir))
+	}
 	for k, v := range r.Env {
+		runOpts = append(runOpts, llb.AddEnv(k, v))
+	}
+	for k, v := range extraExecEnvs {
 		runOpts = append(runOpts, llb.AddEnv(k, v))
 	}
 	for _, sm := range r.Secrets {
@@ -287,6 +390,53 @@ func upsertEnv(envs []string, k, v string) []string {
 		}
 	}
 	return append(envs, k+"="+v)
+}
+
+// mapEnvGetter adapts a string map to buildkit's shell.EnvGetter for ProcessWord.
+type mapEnvGetter map[string]string
+
+func (m mapEnvGetter) Get(key string) (string, bool) {
+	if m == nil {
+		return "", false
+	}
+	v, ok := m[key]
+	return v, ok
+}
+
+func (m mapEnvGetter) Keys() []string {
+	if m == nil {
+		return nil
+	}
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	slices.Sort(keys)
+	return keys
+}
+
+// expand performs Dockerfile-style $VAR / ${VAR} expansion (with quoting support)
+// using BuildKit's own shell lexer. This ensures identical behavior to the official
+// Dockerfile frontend. Missing variables expand to empty (standard for such contexts).
+// It is a cheap no-op when the input contains no $.
+func expand(s string, env map[string]string) (string, error) {
+	if s == "" || !strings.Contains(s, "$") {
+		return s, nil
+	}
+	lex := shell.NewLex('\\')
+	result, _, err := lex.ProcessWord(s, mapEnvGetter(env))
+	if err != nil {
+		return "", err
+	}
+	return result, nil
+}
+
+// splitEnv splits a "KEY=val" entry from an image Env slice. The value may contain =.
+func splitEnv(e string) (k, v string) {
+	if idx := strings.IndexByte(e, '='); idx >= 0 {
+		return e[:idx], e[idx+1:]
+	}
+	return e, ""
 }
 
 // BuildWithDockerUI is the high-level entry used by frontend/build.go.

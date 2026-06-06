@@ -4,7 +4,7 @@ REGISTRY ?= ghcr.io/builderhub
 TAG ?= dev
 IMAGE_NAME ?= $(REGISTRY)/yamlfile:$(TAG)
 
-.PHONY: help build test lint vet revive ci docs docs-serve docker-build docker-build-multiarch docker-push clean
+.PHONY: help build test lint vet revive ci generate-schema docs docs-serve docker-build docker-build-multiarch docker-push clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -28,7 +28,11 @@ ci: test lint vet revive ## Run CI checks: tests, lint, revive, vet (etc.)
 
 DOCS_DIR ?= docs
 
-docs: ## Build Hugo documentation site (output: docs/public)
+generate-schema: ## Generate docs/static/schema/v1alpha1.json from the live Go types in pkg/spec/v1alpha1
+	mkdir -p docs/static/schema
+	go run ./hack/gen-schema -o docs/static/schema/v1alpha1.json
+
+docs: generate-schema ## Build Hugo documentation site (output: docs/public). The schema is always regenerated first.
 	hugo -s $(DOCS_DIR) --gc --minify
 
 docs-serve: ## Serve Hugo docs locally with live reload (http://localhost:1313)
