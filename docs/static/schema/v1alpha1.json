@@ -1,0 +1,672 @@
+{
+  "$defs": {
+    "ArgSpec": {
+      "additionalProperties": true,
+      "properties": {
+        "extensions": {
+          "additionalProperties": {},
+          "type": "object"
+        },
+        "vars": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "BuildRef": {
+      "additionalProperties": true,
+      "properties": {
+        "extensions": {
+          "additionalProperties": {},
+          "type": "object"
+        },
+        "file": {
+          "type": "string"
+        },
+        "target": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "file"
+      ],
+      "type": "object"
+    },
+    "CopySpec": {
+      "additionalProperties": true,
+      "properties": {
+        "dest": {
+          "type": "string"
+        },
+        "extensions": {
+          "additionalProperties": {},
+          "type": "object"
+        },
+        "from": {
+          "type": "string"
+        },
+        "src": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "dest"
+      ],
+      "type": "object"
+    },
+    "Defaults": {
+      "additionalProperties": true,
+      "properties": {
+        "extensions": {
+          "additionalProperties": {},
+          "type": "object"
+        },
+        "platform": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "EnvSpec": {
+      "additionalProperties": true,
+      "properties": {
+        "extensions": {
+          "additionalProperties": {},
+          "type": "object"
+        },
+        "vars": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "RunSpec": {
+      "additionalProperties": true,
+      "properties": {
+        "command": {
+          "type": "string"
+        },
+        "env": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "extensions": {
+          "additionalProperties": {},
+          "type": "object"
+        },
+        "inline": {
+          "type": "string"
+        },
+        "script": {
+          "type": "string"
+        },
+        "secrets": {
+          "items": {
+            "additionalProperties": true,
+            "properties": {
+              "env": {
+                "type": "string"
+              },
+              "extensions": {
+                "additionalProperties": {},
+                "type": "object"
+              },
+              "gid": {
+                "type": "integer"
+              },
+              "id": {
+                "type": "string"
+              },
+              "mode": {
+                "type": "integer"
+              },
+              "optional": {
+                "type": "boolean"
+              },
+              "target": {
+                "type": "string"
+              },
+              "uid": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "id"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "workdir": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "SecretMount": {
+      "additionalProperties": true,
+      "properties": {
+        "env": {
+          "type": "string"
+        },
+        "extensions": {
+          "additionalProperties": {},
+          "type": "object"
+        },
+        "gid": {
+          "type": "integer"
+        },
+        "id": {
+          "type": "string"
+        },
+        "mode": {
+          "type": "integer"
+        },
+        "optional": {
+          "type": "boolean"
+        },
+        "target": {
+          "type": "string"
+        },
+        "uid": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    },
+    "Step": {
+      "additionalProperties": true,
+      "oneOf": [
+        {
+          "additionalProperties": true,
+          "properties": {
+            "run": {
+              "$ref": "#/$defs/RunSpec"
+            }
+          },
+          "required": [
+            "run"
+          ]
+        },
+        {
+          "additionalProperties": true,
+          "properties": {
+            "copy": {
+              "$ref": "#/$defs/CopySpec"
+            }
+          },
+          "required": [
+            "copy"
+          ]
+        },
+        {
+          "additionalProperties": true,
+          "properties": {
+            "env": {
+              "$ref": "#/$defs/EnvSpec"
+            }
+          },
+          "required": [
+            "env"
+          ]
+        },
+        {
+          "additionalProperties": true,
+          "properties": {
+            "arg": {
+              "$ref": "#/$defs/ArgSpec"
+            }
+          },
+          "required": [
+            "arg"
+          ]
+        },
+        {
+          "additionalProperties": true,
+          "properties": {
+            "workdir": {
+              "$ref": "#/$defs/WorkdirSpec"
+            }
+          },
+          "required": [
+            "workdir"
+          ]
+        }
+      ],
+      "type": "object"
+    },
+    "TargetSpec": {
+      "additionalProperties": true,
+      "properties": {
+        "extensions": {
+          "additionalProperties": {},
+          "type": "object"
+        },
+        "from": {
+          "type": "string"
+        },
+        "platform": {
+          "type": "string"
+        },
+        "steps": {
+          "items": {
+            "additionalProperties": true,
+            "properties": {
+              "arg": {
+                "additionalProperties": true,
+                "properties": {
+                  "extensions": {
+                    "additionalProperties": {},
+                    "type": "object"
+                  },
+                  "vars": {
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "type": "object"
+                  }
+                },
+                "type": "object"
+              },
+              "copy": {
+                "additionalProperties": true,
+                "properties": {
+                  "dest": {
+                    "type": "string"
+                  },
+                  "extensions": {
+                    "additionalProperties": {},
+                    "type": "object"
+                  },
+                  "from": {
+                    "type": "string"
+                  },
+                  "src": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "dest"
+                ],
+                "type": "object"
+              },
+              "env": {
+                "additionalProperties": true,
+                "properties": {
+                  "extensions": {
+                    "additionalProperties": {},
+                    "type": "object"
+                  },
+                  "vars": {
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "type": "object"
+                  }
+                },
+                "type": "object"
+              },
+              "extensions": {
+                "additionalProperties": {},
+                "type": "object"
+              },
+              "run": {
+                "additionalProperties": true,
+                "properties": {
+                  "command": {
+                    "type": "string"
+                  },
+                  "env": {
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "type": "object"
+                  },
+                  "extensions": {
+                    "additionalProperties": {},
+                    "type": "object"
+                  },
+                  "inline": {
+                    "type": "string"
+                  },
+                  "script": {
+                    "type": "string"
+                  },
+                  "secrets": {
+                    "items": {
+                      "additionalProperties": true,
+                      "properties": {
+                        "env": {
+                          "type": "string"
+                        },
+                        "extensions": {
+                          "additionalProperties": {},
+                          "type": "object"
+                        },
+                        "gid": {
+                          "type": "integer"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "mode": {
+                          "type": "integer"
+                        },
+                        "optional": {
+                          "type": "boolean"
+                        },
+                        "target": {
+                          "type": "string"
+                        },
+                        "uid": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "id"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "workdir": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "workdir": {
+                "additionalProperties": true,
+                "properties": {
+                  "extensions": {
+                    "additionalProperties": {},
+                    "type": "object"
+                  },
+                  "path": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "path"
+                ],
+                "type": "object"
+              }
+            },
+            "type": "object"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "WorkdirSpec": {
+      "additionalProperties": true,
+      "properties": {
+        "extensions": {
+          "additionalProperties": {},
+          "type": "object"
+        },
+        "path": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "type": "object"
+    },
+    "Yamlfile": {
+      "additionalProperties": true,
+      "properties": {
+        "apiVersion": {
+          "type": "string"
+        },
+        "builds": {
+          "additionalProperties": {
+            "additionalProperties": true,
+            "properties": {
+              "extensions": {
+                "additionalProperties": {},
+                "type": "object"
+              },
+              "file": {
+                "type": "string"
+              },
+              "target": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "file"
+            ],
+            "type": "object"
+          },
+          "type": "object"
+        },
+        "defaults": {
+          "additionalProperties": true,
+          "properties": {
+            "extensions": {
+              "additionalProperties": {},
+              "type": "object"
+            },
+            "platform": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "extensions": {
+          "additionalProperties": {},
+          "type": "object"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "secrets": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "targets": {
+          "additionalProperties": {
+            "additionalProperties": true,
+            "properties": {
+              "extensions": {
+                "additionalProperties": {},
+                "type": "object"
+              },
+              "from": {
+                "type": "string"
+              },
+              "platform": {
+                "type": "string"
+              },
+              "steps": {
+                "items": {
+                  "additionalProperties": true,
+                  "properties": {
+                    "arg": {
+                      "additionalProperties": true,
+                      "properties": {
+                        "extensions": {
+                          "additionalProperties": {},
+                          "type": "object"
+                        },
+                        "vars": {
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "copy": {
+                      "additionalProperties": true,
+                      "properties": {
+                        "dest": {
+                          "type": "string"
+                        },
+                        "extensions": {
+                          "additionalProperties": {},
+                          "type": "object"
+                        },
+                        "from": {
+                          "type": "string"
+                        },
+                        "src": {
+                          "items": {
+                            "type": "string"
+                          },
+                          "type": "array"
+                        }
+                      },
+                      "required": [
+                        "dest"
+                      ],
+                      "type": "object"
+                    },
+                    "env": {
+                      "additionalProperties": true,
+                      "properties": {
+                        "extensions": {
+                          "additionalProperties": {},
+                          "type": "object"
+                        },
+                        "vars": {
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "extensions": {
+                      "additionalProperties": {},
+                      "type": "object"
+                    },
+                    "run": {
+                      "additionalProperties": true,
+                      "properties": {
+                        "command": {
+                          "type": "string"
+                        },
+                        "env": {
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "type": "object"
+                        },
+                        "extensions": {
+                          "additionalProperties": {},
+                          "type": "object"
+                        },
+                        "inline": {
+                          "type": "string"
+                        },
+                        "script": {
+                          "type": "string"
+                        },
+                        "secrets": {
+                          "items": {
+                            "additionalProperties": true,
+                            "properties": {
+                              "env": {
+                                "type": "string"
+                              },
+                              "extensions": {
+                                "additionalProperties": {},
+                                "type": "object"
+                              },
+                              "gid": {
+                                "type": "integer"
+                              },
+                              "id": {
+                                "type": "string"
+                              },
+                              "mode": {
+                                "type": "integer"
+                              },
+                              "optional": {
+                                "type": "boolean"
+                              },
+                              "target": {
+                                "type": "string"
+                              },
+                              "uid": {
+                                "type": "integer"
+                              }
+                            },
+                            "required": [
+                              "id"
+                            ],
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
+                        "workdir": {
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "workdir": {
+                      "additionalProperties": true,
+                      "properties": {
+                        "extensions": {
+                          "additionalProperties": {},
+                          "type": "object"
+                        },
+                        "path": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "path"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              }
+            },
+            "type": "object"
+          },
+          "type": "object"
+        }
+      },
+      "required": [
+        "apiVersion",
+        "targets"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "https://builderhub.github.io/Yamlfile/schema/v1alpha1.json",
+  "$ref": "#/$defs/Yamlfile",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "BuildKit frontend (v1alpha1) declarative build definition. The schema is generated from the Go types in pkg/spec/v1alpha1 and is the source of truth for editors and validation.",
+  "title": "Yamlfile v1alpha1"
+}

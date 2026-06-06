@@ -46,7 +46,13 @@ my-target:
 
 ## Step (discriminated union)
 
-A step has exactly one of `run`, `copy`, or `env`.
+A step has exactly one of `run`, `copy`, `env`, `arg`, or `workdir`.
+
+> **Variable expansion**: Values inside `env.vars`, `arg.vars`, `workdir.path` (standalone or `run.workdir`), and `run.env` support `$VAR` and `${VAR}` references. These are expanded using BuildKit's shell lexer against CLI `--build-arg` values, `arg:` declarations (with defaults), and any `env:` / `run.env` values set earlier in the same target. Sibling `from:` targets inherit their final `ENV` values for expansion. `from:`, `copy.from`, `script:`, and the bodies of `command`/`inline` are left literal (shell handles `$` inside commands at runtime).
+
+A machine-readable **JSON Schema** is automatically generated from the Go types on every `make docs` (and in CI) and published alongside the site:
+`schema/v1alpha1.json` (relative to the docs root; e.g. https://builderhub.github.io/Yamlfile/schema/v1alpha1.json).
+Point `yaml-language-server` or your editor at it for completion, validation, and hover documentation. The schema is the source of truth and always matches the code you are running.
 
 ### run
 
@@ -65,6 +71,8 @@ A step has exactly one of `run`, `copy`, or `env`.
       CGO_ENABLED: "0"
       GOOS: linux
 
+    workdir: /app/src          # per-run working directory (transient for this exec only)
+
     secrets:
       - id: mytoken
         env: GITHUB_TOKEN
@@ -79,6 +87,7 @@ A step has exactly one of `run`, `copy`, or `env`.
 
 - `script` paths are resolved relative to the build context. The frontend loads the content (via a restricted local source) and makes it available inside the `RUN` via a temporary scratch mount. The script does **not** end up as a layer in the final image unless you explicitly copy it.
 - Secrets are passed using BuildKit's native `--mount=type=secret` mechanism. They are never present in image layers or history.
+- `workdir` sets the working directory only for this `RUN` (equivalent to `RUN --workdir=...` or `cd` inside the command). It does not affect subsequent steps or the final image `WORKDIR`. Use the top-level `workdir:` step (below) if you want a persistent change.
 
 ### copy
 
@@ -93,7 +102,7 @@ A step has exactly one of `run`, `copy`, or `env`.
 
 ### env
 
-Convenience form (equivalent to putting `env:` inside a `run` step, but clearer when you just want to set image config).
+Convenience form (equivalent to putting `env:` inside a `run` step, but clearer when you just want to set image config). Values support `${VAR}` / `$VAR` expansion (see the Variable expansion note above).
 
 ```yaml
 - env:
@@ -101,6 +110,39 @@ Convenience form (equivalent to putting `env:` inside a `run` step, but clearer 
       PATH: "/app/bin:${PATH}"
       FOO: bar
 ```
+
+### arg
+
+Declares a build-time variable (analogous to `ARG` in a Dockerfile). The value is a default; it can be overridden with `--build-arg NAME=...` at build time. `arg:` values participate in expansion for later steps and are visible (as environment variables) inside subsequent `run` steps' shells, but they do **not** appear in the final image `ENV` unless you also emit them via an `env:` step.
+
+```yaml
+- arg:
+    vars:
+      GO_VERSION: "1.25"   # default; override with --build-arg GO_VERSION=1.24
+      VARIANT:             # no default; must be supplied via --build-arg or expands to ""
+```
+
+You can reference a build arg (CLI or declared) inside later `env:`, `arg:`, or `workdir:` values:
+
+```yaml
+- arg:
+    vars:
+      APP: myapp
+- env:
+    vars:
+      BIN: /out/${APP}
+```
+
+### workdir
+
+Sets the persistent working directory for the remainder of the target (affects the `llb.State` for later steps and the exported image config). This is the moral equivalent of a Dockerfile `WORKDIR` instruction.
+
+```yaml
+- workdir:
+    path: /app
+```
+
+Subsequent `run` steps (and `copy` destinations that are relative) will be relative to this directory. A later `workdir:` overrides it. Per-run overrides are available via `run.workdir` (see above).
 
 ## Secrets
 

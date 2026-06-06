@@ -42,7 +42,7 @@ func Load(data []byte) (*Yamlfile, error) {
 		}
 	}
 
-	// Step validation: each step must declare exactly one kind (run/copy/env).
+	// Step validation: each step must declare exactly one kind (run/copy/env/arg/workdir).
 	// This prevents ambiguous or empty steps at parse time (Go struct allows multiple
 	// because of how yaml unmarshal + our discriminated union works).
 	for tname, t := range y.Targets {
@@ -57,8 +57,14 @@ func Load(data []byte) (*Yamlfile, error) {
 			if s.Env != nil {
 				kinds++
 			}
+			if s.Arg != nil {
+				kinds++
+			}
+			if s.Workdir != nil {
+				kinds++
+			}
 			if kinds != 1 {
-				return nil, fmt.Errorf("target %q step %d must specify exactly one of: run, copy, or env", tname, i)
+				return nil, fmt.Errorf("target %q step %d must specify exactly one of: run, copy, env, arg, or workdir", tname, i)
 			}
 		}
 	}

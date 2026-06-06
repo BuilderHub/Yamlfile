@@ -22,6 +22,8 @@ nix develop
 make help          # list targets
 make ci            # tests + lint + vet + revive
 make test
+make generate-schema  # (re)generate docs/static/schema/v1alpha1.json from pkg/spec/v1alpha1 (also run by docs)
+make docs
 make docker-build  # current-arch image tagged localhost... or REGISTRY=... TAG=...
 ```
 
@@ -48,16 +50,17 @@ make docs-serve  # live reload at http://localhost:1313
 
 ## Code layout (relevant to docs)
 
-- `pkg/spec/v1alpha1/` — the types + parser (update syntax-reference.md when changing surface).
-- `pkg/convert/` — graph + LLB emission (the source of truth for parallelism helpers, script mounting, secret handling, and the current same-file target/copy implementation; multi-file loading is future work).
+- `pkg/spec/v1alpha1/` — the types + parser (update syntax-reference.md when changing surface). The JSON Schema under `docs/static/schema/` is generated from these types.
+- `pkg/convert/` — graph + LLB emission (the source of truth for parallelism helpers, script mounting, secret handling, variable expansion, and the current same-file target/copy implementation; multi-file loading is future work).
 - `cmd/yamlfile-frontend/` — the BuildKit gateway entrypoint + Dockerfile.
+- `hack/gen-schema/` — the (stdlib-only) generator that produces `docs/static/schema/v1alpha1.json` from the live Go types. It is invoked automatically by `make docs`.
 
 ## Contributing
 
 1. `nix develop`
 2. `make ci`
 3. Make your change + add/adjust tests or docs.
-4. `make docs` (if you touched content).
+4. `make docs` (if you touched content or the v1alpha1 types — this also regenerates the JSON Schema).
 5. Open PR against `main`.
 
 All changes to the v1alpha1 surface should be reflected in `docs/content/syntax-reference.md` and usually a short note or example under `docs/content/features/`.

@@ -49,7 +49,7 @@ See `examples/` and the `Makefile` for dev commands. Design notes are in the sou
 - Parallel execution of independent targets (errgroup in frontend + natural LLB DAG).
 - Single top-level Yamlfile can reference multiple component files (`file:` or `builds:`) that each build their target(s); cross-`copy` artifacts between them.
 - `apiVersion: v1alpha1` + extension maps for safe evolution (no breaks on additive features).
-- Reuses dockerui + llb + gateway so it supports build args, platforms, named contexts, cache, etc. natively.
+- Reuses dockerui + llb + gateway so it supports build args (`arg:` with defaults), platforms, named contexts, cache, etc. natively. `$VAR`/`${VAR}` expansion works inside `env`/`arg`/`workdir` values (using the same lexer as the Dockerfile frontend).
 
 ## Why not (just) Dockerfile?
 

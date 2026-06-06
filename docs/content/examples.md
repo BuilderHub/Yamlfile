@@ -74,5 +74,35 @@ docker buildx build -f examples/multi-target.Yamlfile \
 
 See the [Syntax Reference]({{< relref "/syntax-reference" >}}) for the grammar and [Features](/features) for deep dives into `run.script` and secrets.
 
+## Build args, variable expansion, and workdir
+
+A small pattern using the features added in this iteration:
+
+```yaml
+apiVersion: v1alpha1
+targets:
+  build:
+    from: golang:1.25
+    steps:
+      - arg:
+          vars:
+            VERSION: "dev"
+      - env:
+          vars:
+            CGO_ENABLED: "0"
+            BIN: /out/myapp-${VERSION}
+      - workdir:
+          path: /src
+      - run:
+          command: go build -o ${BIN} .
+          workdir: /src/cmd/myapp   # per-run override (does not persist)
+```
+
+Build with an override:
+
+```bash
+docker buildx build ... --build-arg VERSION=1.2.3 ...
+```
+
 More examples will be added as the project evolves (multi-file orchestration, explicit platform handling, and intra-build parallel execution are on the roadmap).
 
