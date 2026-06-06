@@ -31,11 +31,8 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./cmd/yamlfile-frontend/Yamlfile
+          file: ./cmd/yamlfile-frontend/Dockerfile
           platforms: linux/amd64,linux/arm64
-          build-args: |
-            BUILDKIT_SYNTAX=ghcr.io/builderhub/yamlfile:latest
-            VERSION=${{ github.event.release.tag_name }}
           push: true
           tags: |
             ghcr.io/builderhub/yamlfile:latest

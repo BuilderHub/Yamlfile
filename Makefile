@@ -5,7 +5,7 @@ TAG ?= dev
 IMAGE_NAME ?= $(REGISTRY)/yamlfile:$(TAG)
 SYNTAX_IMAGE ?= ghcr.io/builderhub/yamlfile:latest
 
-.PHONY: help build test lint vet revive ci generate-schema docs docs-serve docker-build docker-build-multiarch docker-push clean
+.PHONY: help build test lint vet revive ci generate-schema docs docs-serve docker-build docker-build-multiarch docker-build-from-yamlfile docker-build-from-yamlfile-multiarch docker-push clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -40,7 +40,21 @@ docs-serve: ## Serve Hugo docs locally with live reload (http://localhost:1313)
 	hugo server -s $(DOCS_DIR) -D --disableFastRender --noHTTPCache --baseURL http://localhost:1313/
 
 docker-build: ## Build yamlfile frontend image (current arch) using buildx
-	# Bootstrap: requires an existing yamlfile image as BUILDKIT_SYNTAX (see SYNTAX_IMAGE).
+	docker buildx build \
+		-f cmd/yamlfile-frontend/Dockerfile \
+		-t $(IMAGE_NAME) \
+		--load \
+		.
+
+docker-build-multiarch: ## Build multi-arch image (push required for manifest)
+	docker buildx build \
+		-f cmd/yamlfile-frontend/Dockerfile \
+		-t $(IMAGE_NAME) \
+		--platform linux/amd64,linux/arm64 \
+		--push \
+		.
+
+docker-build-from-yamlfile: ## Build frontend image via Yamlfile (dogfooding; requires SYNTAX_IMAGE)
 	docker buildx build \
 		-f cmd/yamlfile-frontend/Yamlfile \
 		--build-arg BUILDKIT_SYNTAX=$(SYNTAX_IMAGE) \
@@ -49,7 +63,7 @@ docker-build: ## Build yamlfile frontend image (current arch) using buildx
 		--load \
 		.
 
-docker-build-multiarch: ## Build multi-arch image (push required for manifest)
+docker-build-from-yamlfile-multiarch: ## Multi-arch frontend image via Yamlfile (push required)
 	docker buildx build \
 		-f cmd/yamlfile-frontend/Yamlfile \
 		--build-arg BUILDKIT_SYNTAX=$(SYNTAX_IMAGE) \

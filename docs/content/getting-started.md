@@ -51,8 +51,7 @@ From the yamlfile directory:
 
 ```bash
 docker buildx build \
-  -f cmd/yamlfile-frontend/Yamlfile \
-  --build-arg BUILDKIT_SYNTAX=ghcr.io/builderhub/yamlfile:latest \
+  -f cmd/yamlfile-frontend/Dockerfile \
   -t localhost:5000/yamlfile:dev \
   --load \
   .
@@ -65,6 +64,8 @@ docker buildx build -f examples/minimal.Yamlfile \
 ```
 
 See the `Makefile` targets (`make docker-build`, `make docker-build-multiarch`) for the canonical commands used in CI/release. (Run `make` from the yamlfile directory, or `make -C /path/to/yamlfile ...`.) The source is at the root of the repository.
+
+To dogfood the Yamlfile-based frontend image build (requires a published yamlfile image as bootstrap), use `make docker-build-from-yamlfile`.
 
 ## Supplying Secrets
 

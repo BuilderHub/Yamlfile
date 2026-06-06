@@ -62,7 +62,7 @@ yamlfile makes the graph, the parallelism, the script injection, and the secret 
 ```bash
 nix develop
 make test
-docker buildx build -f cmd/yamlfile-frontend/Yamlfile --build-arg BUILDKIT_SYNTAX=ghcr.io/builderhub/yamlfile:latest -t localhost:5000/yamlfile:dev --load .
+docker buildx build -f cmd/yamlfile-frontend/Dockerfile -t localhost:5000/yamlfile:dev --load .
 docker buildx build -f examples/minimal.Yamlfile --build-arg BUILDKIT_SYNTAX=localhost:5000/yamlfile:dev --output type=local,dest=/tmp/out .
 cat /tmp/out/msg.txt
 ```
