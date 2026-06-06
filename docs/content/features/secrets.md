@@ -5,7 +5,7 @@ weight: 20
 
 
 
-yamlfile supports BuildKit's native secret mounts in a declarative way.
+Yamlfile supports BuildKit's native secret mounts in a declarative way.
 
 ```yaml
 - run:
@@ -25,7 +25,7 @@ yamlfile supports BuildKit's native secret mounts in a declarative way.
 - `target:` (or omitting it) → secret appears as a file (default location `/run/secrets/<id>`).
 - `env:` → secret is exported as an environment variable inside the `RUN` (the value is masked in logs by BuildKit).
 
-Both are implemented using `llb.AddSecretWithDest` + the appropriate `SecretAsEnvName` / `SecretFileOpt` options.
+Both map directly to BuildKit's `--mount=type=secret` mechanism (file mount or `env=` form).
 
 ## Supplying secrets at build time
 
@@ -34,8 +34,6 @@ docker buildx build ... \
   --secret id=registry_token,env=REGISTRY_TOKEN \
   --secret id=netrc,src=$HOME/.netrc-for-build
 ```
-
-Or using the `on-release.yaml` / `on-pr.yaml` patterns with the reusable buildah workflow if you are publishing the image from CI.
 
 See the [Syntax Reference]({{< relref "/syntax-reference#secrets-secretmount" >}}) for the full `SecretMount` options (`optional`, `mode`, `uid`, `gid`).
 

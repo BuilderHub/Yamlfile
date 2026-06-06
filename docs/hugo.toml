@@ -1,6 +1,6 @@
 baseURL = 'https://builderhub.github.io/Yamlfile/'
 locale = 'en-us'
-title = 'yamlfile'
+title = 'Yamlfile'
 
 # Enable useful features for technical docs
 enableGitInfo = true
@@ -10,7 +10,7 @@ pygmentsStyle = 'monokai'
 disableKinds = ["taxonomy", "term"]
 
 [params]
-  description = 'BuildKit frontend (v1alpha1) for intuitive, declarative, parallel, multi-file, secret-aware builds.'
+  description = 'BuildKit frontend for intuitive, declarative, parallel, multi-file, secret-aware builds.'
   author = 'BuilderHub'
   # Useful for "edit this page" links if we add partials later
   github_repo = 'https://github.com/BuilderHub/Yamlfile'
@@ -24,7 +24,14 @@ disableKinds = ["taxonomy", "term"]
     startLevel = 2
     endLevel = 3
 
+[outputFormats]
+  [outputFormats.SearchIndex]
+    mediaType = "application/json"
+    baseName = "search-index"
+    isPlainText = true
+    notAlternative = true
+
 [outputs]
-  home = ["HTML", "RSS"]
+  home = ["HTML", "RSS", "SearchIndex"]
   section = ["HTML", "RSS"]
   page = ["HTML"]

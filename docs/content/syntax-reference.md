@@ -1,16 +1,16 @@
 ---
-title: "Syntax Reference (v1alpha1)"
+title: "Syntax Reference"
 weight: 20
 ---
 
-This page is the authoritative reference for the structure understood by the `yamlfile` BuildKit frontend.
+This page is the authoritative reference for the structure understood by the `Yamlfile` BuildKit frontend.
 
-> **v1alpha1 MVP status**: The grammar, parser, and graph are forward-compatible (unknown fields are retained via extensions). However, not everything declared in the grammar is fully wired in the current frontend:
+> **MVP status**: The grammar, parser, and graph are forward-compatible (unknown fields are retained via extensions). However, not everything declared in the grammar is fully wired in the current frontend:
 > - `builds:` + `component:target` cross-file orchestration — parsed and graphed but loading/resolution is not yet implemented (only same-file sibling `from:` / `copy.from:` work today).
 > - `defaults.platform` and per-target `platform:` — accepted by the parser but ignored (the frontend follows the platform(s) requested via the BuildKit client / `--platform`).
 > - Full independent parallel execution inside one build request — the graph helpers (`parallelRoots`, reachable ordering) exist and are tested; the actual ToLLB path is intentionally serial for determinism ("For MVP we build serially in reachable order").
 >
-> See `pkg/convert/convert.go` (comments around ToLLB and dispatch*) and `pkg/convert/graph.go` for the current scope. Multi-file and platform support are high priority for the next iteration.
+> See [Development]({{< relref "/development" >}}) for current implementation scope and source layout. Multi-file and platform support are high priority for the next iteration.
 
 ## Top Level
 
@@ -50,9 +50,7 @@ A step has exactly one of `run`, `copy`, `env`, `arg`, `workdir`, `label`, or `e
 
 > **Variable expansion**: Values inside `env.vars`, `arg.vars`, `label.vars`, `workdir.path` (standalone or `run.workdir`), and `run.env` support `$VAR` and `${VAR}` references. These are expanded using BuildKit's shell lexer against CLI `--build-arg` values, `arg:` declarations (with defaults), and any `env:` / `run.env` values set earlier in the same target. Sibling `from:` targets inherit their final `ENV` values for expansion. `from:`, `copy.from`, `script:`, and the bodies of `command`/`inline` are left literal (shell handles `$` inside commands at runtime).
 
-A machine-readable **JSON Schema** is automatically generated from the Go types on every `make docs` (and in CI) and published alongside the site:
-`schema/v1alpha1.json` (relative to the docs root; e.g. https://builderhub.github.io/Yamlfile/schema/v1alpha1.json).
-Point `yaml-language-server` or your editor at it for completion, validation, and hover documentation. The schema is the source of truth and always matches the code you are running.
+A machine-readable [JSON Schema](https://builderhub.github.io/Yamlfile/schema/v1alpha1.json) is published alongside the docs site at `schema/v1alpha1.json`. Point `yaml-language-server` or your editor at it for completion, validation, and hover documentation. The schema is the source of truth for the supported Yamlfile surface.
 
 ### run
 
@@ -82,8 +80,7 @@ Point `yaml-language-server` or your editor at it for completion, validation, an
         optional: true
 ```
 
-**Quoting tip (common gotcha)**: If your `command:` value contains `key: value` (or looks like a YAML map), quote it or use `inline:` / `script:`. Unquoted `go build -o /out/app .` is fine, but `command: echo foo: bar > /x` can be misparsed by YAML as a map. The examples in this repo always use double quotes or the `|` block form for safety.
-```
+**Quoting tip (common gotcha)**: If your `command:` value contains `key: value` (or looks like a YAML map), quote it or use `inline:` / `script:`. Unquoted `go build -o /out/app .` is fine, but `command: echo foo: bar > /x` can be misparsed by YAML as a map. Prefer double quotes or the `|` block form for safety.
 
 - `script` paths are resolved relative to the build context. The frontend loads the content (via a restricted local source) and makes it available inside the `RUN` via a temporary scratch mount. The script does **not** end up as a layer in the final image unless you explicitly copy it.
 - Secrets are passed using BuildKit's native `--mount=type=secret` mechanism. They are never present in image layers or history.
@@ -135,7 +132,7 @@ You can reference a build arg (CLI or declared) inside later `env:`, `arg:`, or 
 
 ### workdir
 
-Sets the persistent working directory for the remainder of the target (affects the `llb.State` for later steps and the exported image config). This is the moral equivalent of a Dockerfile `WORKDIR` instruction.
+Sets the persistent working directory for the remainder of the target (affects subsequent steps and the exported image config). This is the moral equivalent of a Dockerfile `WORKDIR` instruction.
 
 ```yaml
 - workdir:
@@ -151,13 +148,13 @@ Sets OCI image config labels (the equivalent of Dockerfile `LABEL`). Values supp
 ```yaml
 - label:
     vars:
-      org.opencontainers.image.title: yamlfile
+      org.opencontainers.image.title: Yamlfile
       moby.buildkit.frontend.network.none: "true"
 ```
 
 ### entrypoint
 
-Sets the image config entrypoint (Dockerfile `ENTRYPOINT`). Uses the same invocation fields as `run` (`command`, `inline`, or `script`) but emits image metadata rather than an llb exec.
+Sets the image config entrypoint (Dockerfile `ENTRYPOINT`). Uses the same invocation fields as `run` (`command`, `inline`, or `script`) but emits image metadata rather than executing a build step.
 
 ```yaml
 - entrypoint:
@@ -168,7 +165,7 @@ Semantics differ from `run` for `command`:
 
 - **`entrypoint.command`**: exec-form — the string is shlex-split into argv (maps to `ENTRYPOINT ["/bin/foo"]`). No `/bin/sh -c` wrapper.
 - **`entrypoint.inline`**: shell-form — prepends the image shell (e.g. `/bin/sh -c`), like Dockerfile shell `ENTRYPOINT`.
-- **`entrypoint.script`**: not supported in v1alpha1 (`script` is a build-time mount mechanism for `run` only).
+- **`entrypoint.script`**: not supported yet (`script` is a build-time mount mechanism for `run` only).
 
 ## Secrets
 
@@ -196,12 +193,28 @@ secrets:
         optional: true
 ```
 
-Both the file form (`target:`) and env-var form (`env:`) are implemented using `llb.AddSecretWithDest` + the appropriate `SecretAsEnvName` / `SecretFileOpt` options. Secrets are **never** present in final image layers or history when used correctly.
+Both the file form (`target:`) and env-var form (`env:`) map to BuildKit's `--mount=type=secret` mechanism. Secrets are **never** present in final image layers or history when used correctly.
+
+### SecretMount options
+
+Each entry in a `run.secrets` list supports:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string (required) | Secret identifier; must match `--secret id=...` at build time |
+| `target` | string | File path inside the run (default: `/run/secrets/<id>`) |
+| `env` | string | Inject as an environment variable instead of a file (value masked in logs) |
+| `optional` | bool | If true, the run proceeds when the secret is not supplied |
+| `mode` | int | File permission bits (e.g. `0600`) |
+| `uid` | int | Owner UID for the mounted secret file |
+| `gid` | int | Owner GID for the mounted secret file |
+
+Use either `target:` (file form) or `env:` (env form), not both on the same entry.
 
 See [Features / Secrets]({{< relref "/features/secrets" >}}) for supply examples (`--secret id=...,env=...` or `src=...`) and the exact option semantics.
 
 
-## Multi-file / Orchestration (`builds:`) — grammar only in v1alpha1
+## Multi-file / Orchestration (`builds:`) — grammar only (not yet implemented)
 
 The grammar and dependency graph prep support declaring other Yamlfiles:
 
@@ -221,14 +234,14 @@ targets:
           dest: "/torch"
 ```
 
-**Current status (v1alpha1 MVP)**: `builds:` entries and the `component:target` form are parsed and appear in the graph for forward compatibility and tooling, but the frontend does **not** yet load external Yamlfiles or wire cross-file state. Only same-file sibling targets (via `from:` or `copy.from:` using a bare target name) are resolved today.
+**Current status**: `builds:` entries and the `component:target` form are parsed and appear in the graph for forward compatibility and tooling, but the frontend does **not** yet load external Yamlfiles or wire cross-file state. Only same-file sibling targets (via `from:` or `copy.from:` using a bare target name) are resolved today.
 
 For now, keep everything in one Yamlfile using multiple named targets + sibling references. Full multi-file support (loading, caching, cross-copy) is planned for the next release.
 
-See the note at the top of this page and `pkg/convert/graph.go` (the `builds` map is stored but not traversed for external loading in ToLLB).
+See the MVP note at the top of this page.
 
 
-## Platform & Defaults — parsed only in v1alpha1
+## Platform & Defaults — parsed only (not yet applied)
 
 ```yaml
 defaults:
@@ -240,7 +253,7 @@ targets:
     platform: linux/arm64   # overrides default for this target
 ```
 
-**Current status**: The fields exist in the types and survive parsing (for forward-compat and so that linters/docs tools can see the intent). However, the v1alpha1 frontend does not yet read `defaults.platform` or per-target `platform:` — it always uses the platform(s) requested by the BuildKit client (e.g. `docker buildx build --platform linux/amd64,linux/arm64 ...` or the default of the builder).
+**Current status**: The fields exist in the types and survive parsing (for forward-compat and so that linters/docs tools can see the intent). However, the frontend does not yet read `defaults.platform` or per-target `platform:` — it always uses the platform(s) requested by the BuildKit client (e.g. `docker buildx build --platform linux/amd64,linux/arm64 ...` or the default of the builder).
 
 See the MVP note at the top of the page.
 
@@ -248,4 +261,4 @@ See the MVP note at the top of the page.
 
 All top-level objects and step types accept an `Extensions` map (via YAML `<<` or unknown keys) so future fields can be added without breaking existing documents.
 
-Unknown step kinds or required fields that are missing will produce clear errors at parse / conversion time in the current v1alpha1 implementation.
+Unknown step kinds or required fields that are missing will produce clear errors at parse / conversion time.

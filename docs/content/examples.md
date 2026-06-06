@@ -7,7 +7,7 @@ weight: 50
 
 ## Minimal
 
-See `examples/minimal.Yamlfile` in the repository:
+See `examples/minimal.Yamlfile`:
 
 ```yaml
 apiVersion: v1alpha1
@@ -17,7 +17,7 @@ targets:
     from: alpine:3.19
     steps:
       - run:
-          command: echo "hello from yamlfile v1alpha1" > /msg.txt
+          command: echo "hello from Yamlfile" > /msg.txt
       - run:
           inline: |
             echo "inline shell logic works" >> /msg.txt
@@ -47,7 +47,7 @@ See the complete, self-contained file + supporting script:
 - `examples/multi-target.Yamlfile`
 - `examples/scripts/prepare.sh`
 
-The example is fully runnable today (uses only implemented v1alpha1 features). Because the leaf target is named `default`, you do not need `--target`:
+The example is fully runnable today (uses only currently implemented features). Because the leaf target is named `default`, you do not need `--target`:
 
 ```bash
 docker buildx build -f examples/multi-target.Yamlfile \
@@ -72,7 +72,7 @@ docker buildx build -f examples/multi-target.Yamlfile \
   .
 ```
 
-See the [Syntax Reference]({{< relref "/syntax-reference" >}}) for the grammar and [Features](/features) for deep dives into `run.script` and secrets.
+See the [Syntax Reference]({{< relref "/syntax-reference" >}}) for the grammar and [Features]({{< relref "/features" >}}) for deep dives into `run.script` and secrets.
 
 ## Build args, variable expansion, and workdir
 
@@ -104,5 +104,5 @@ Build with an override:
 docker buildx build ... --build-arg VERSION=1.2.3 ...
 ```
 
-More examples will be added as the project evolves (multi-file orchestration, explicit platform handling, and intra-build parallel execution are on the roadmap).
+More examples will be added in future releases (multi-file orchestration, explicit platform handling, and intra-build parallel execution are on the roadmap).
 

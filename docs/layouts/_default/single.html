@@ -1,12 +1,6 @@
 {{ define "main" }}
 <article>
   <h1>{{ .Title }}</h1>
-  {{ with .TableOfContents }}
-    <details class="toc">
-      <summary>On this page</summary>
-      {{ . }}
-    </details>
-  {{ end }}
   {{ .Content }}
 </article>
 {{ end }}

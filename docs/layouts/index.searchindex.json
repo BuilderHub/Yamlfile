@@ -1,0 +1,17 @@
+{{- $pages := .Site.RegularPages -}}
+{{- $index := slice -}}
+{{- range $pages -}}
+  {{- $section := "" -}}
+  {{- if .Parent -}}
+    {{- if ne .Parent.Title .Site.Title -}}
+      {{- $section = .Parent.Title -}}
+    {{- end -}}
+  {{- end -}}
+  {{- $index = $index | append (dict
+    "title" .Title
+    "url" .RelPermalink
+    "section" $section
+    "content" (.Plain | truncate 500)
+  ) -}}
+{{- end -}}
+{{- $index | jsonify -}}

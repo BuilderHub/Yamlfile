@@ -3,7 +3,7 @@ title: "Multi-file Builds & Cross-Target Copy"
 weight: 25
 ---
 
-> **v1alpha1 note**: Grammar + graph support for `builds:` exists for forward compatibility and so that external tools can see the declared structure. **Full runtime support is not yet implemented.** Only same-file sibling targets work for `from:` and `copy.from:` today. The claims and examples below describe the intended design; see the "Current status" callout.
+> **Note**: Grammar + graph support for `builds:` exists for forward compatibility and so that external tools can see the declared structure. **Full runtime support is not yet implemented.** Only same-file sibling targets work for `from:` and `copy.from:` today. The claims and examples below describe the intended design; see the "Current status" callout.
 
 Multi-file orchestration will let a single top-level `Yamlfile` coordinate builds defined in other `Yamlfile`s (often in subdirectories) and then `copy` artifacts across them.
 
@@ -33,7 +33,7 @@ targets:
 
 ```yaml
 - copy:
-    from: "previous-target"    # sibling in same file (supported in v1alpha1)
+    from: "previous-target"    # sibling in same file (supported today)
     src: ["./bin/", "LICENSE"]
     dest: "/app/"
 ```
@@ -42,11 +42,11 @@ The cross-file form (`from: "torch:base"`) is parsed and represented in the grap
 
 `from` may be omitted / set to empty or `"context"` to copy from the caller's original build context (supported).
 
-## Current status (v1alpha1)
+## Current status
 
-See the prominent note at the top of the [Syntax Reference]({{< relref "/syntax-reference#multi-file--orchestration-builds--grammar-only-in-v1alpha1" >}}).
+See the prominent note at the top of the [Syntax Reference]({{< relref "/syntax-reference#multi-file--orchestration-builds--grammar-only-not-yet-implemented" >}}).
 
-In short: keep related targets in one Yamlfile for now. The dependency graph, cycle detection, and reachable set already handle multi-target single-file cases beautifully (see `pkg/convert/graph.go` + its tests and the `parallelRoots` helper).
+In short: keep related targets in one Yamlfile for now. The dependency graph, cycle detection, and reachable set already handle multi-target single-file cases well today.
 
 When multi-file lands, the same `from:` / `copy.from:` syntax will just work across files.
 
