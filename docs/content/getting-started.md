@@ -8,7 +8,6 @@ weight: 10
 ## Prerequisites
 
 - Docker with BuildKit enabled (Docker 23+ or `DOCKER_BUILDKIT=1`).
-- (Recommended for development) `nix develop` (from the yamlfile directory).
 
 ## Using a Released Image
 
@@ -45,31 +44,15 @@ docker buildx build -f MyYamlfile \
   .
 ```
 
-## Local Development / Custom Build
+To use a custom frontend image instead of the published one, pass `--build-arg BUILDKIT_SYNTAX=<your-image>`.
 
-From the yamlfile directory:
+## Build from source
 
-```bash
-docker buildx build \
-  -f cmd/yamlfile-frontend/Dockerfile \
-  -t localhost:5000/yamlfile:dev \
-  --load \
-  .
-
-# Use your local image (context can be any dir with your Yamlfile; here "." for the example)
-docker buildx build -f examples/minimal.Yamlfile \
-  --build-arg BUILDKIT_SYNTAX=localhost:5000/yamlfile:dev \
-  --output type=local,dest=/tmp/out \
-  .
-```
-
-See the `Makefile` targets (`make docker-build`, `make docker-build-multiarch`) for the canonical commands used in CI/release. (Run `make` from the yamlfile directory, or `make -C /path/to/yamlfile ...`.) The source is at the root of the repository.
-
-To dogfood the Yamlfile-based frontend image build (requires a published yamlfile image as bootstrap), use `make docker-build-from-yamlfile`.
+To build the frontend from source or run project CI locally, see [Development]({{< relref "/development" >}}).
 
 ## Supplying Secrets
 
-yamlfile passes secrets through to BuildKit's native secret mechanism. Example:
+Yamlfile passes secrets through to BuildKit's native secret mechanism. Example:
 
 ```yaml
 targets:
@@ -99,4 +82,4 @@ See the [Secrets]({{< relref "/features/secrets" >}}) page for details on file v
 
 - Read the [Syntax Reference]({{< relref "/syntax-reference" >}}) for the full v1alpha1 grammar.
 - Look at [Examples]({{< relref "/examples" >}}).
-- See how the frontend implements script injection and secret mounts in the source (`pkg/convert/`).
+- See [Development]({{< relref "/development" >}}) for implementation details and contributor setup.

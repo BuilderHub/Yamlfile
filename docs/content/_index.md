@@ -1,5 +1,5 @@
 ---
-title: "yamlfile"
+title: "Yamlfile"
 weight: 1
 ---
 
@@ -29,9 +29,9 @@ See the [Getting Started]({{< relref "/getting-started" >}}) page and the [Synta
 - `apiVersion: v1alpha1` + inline extensions for forward-compatible evolution.
 - (Planned) Multi-file orchestration via `builds:` + `component:target` cross-copy (grammar + graph support present; runtime loading not yet wired).
 
-## Why yamlfile instead of (just) a Dockerfile?
+## Why Yamlfile instead of (just) a Dockerfile?
 
-Traditional multi-stage Dockerfiles become hard to reason about once you have 10–50 stages, lots of independent downloaders, shared scripts, and secret mounts. yamlfile makes the graph, the parallelism, the script injection, and the secret mounting first-class and declarative.
+Traditional multi-stage Dockerfiles become hard to reason about once you have 10–50 stages, lots of independent downloaders, shared scripts, and secret mounts. Yamlfile makes the graph, the parallelism, the script injection, and the secret mounting first-class and declarative.
 
 Full motivation and comparison: [vs. Dockerfile]({{< relref "/vs-dockerfile" >}}).
 

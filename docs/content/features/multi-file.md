@@ -46,7 +46,7 @@ The cross-file form (`from: "torch:base"`) is parsed and represented in the grap
 
 See the prominent note at the top of the [Syntax Reference]({{< relref "/syntax-reference#multi-file--orchestration-builds--grammar-only-in-v1alpha1" >}}).
 
-In short: keep related targets in one Yamlfile for now. The dependency graph, cycle detection, and reachable set already handle multi-target single-file cases beautifully (see `pkg/convert/graph.go` + its tests and the `parallelRoots` helper).
+In short: keep related targets in one Yamlfile for now. The dependency graph, cycle detection, and reachable set already handle multi-target single-file cases well today.
 
 When multi-file lands, the same `from:` / `copy.from:` syntax will just work across files.
 

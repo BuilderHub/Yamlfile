@@ -1,6 +1,6 @@
 baseURL = 'https://builderhub.github.io/Yamlfile/'
 locale = 'en-us'
-title = 'yamlfile'
+title = 'Yamlfile'
 
 # Enable useful features for technical docs
 enableGitInfo = true

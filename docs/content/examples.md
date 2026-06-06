@@ -7,7 +7,7 @@ weight: 50
 
 ## Minimal
 
-See `examples/minimal.Yamlfile` in the repository:
+See `examples/minimal.Yamlfile`:
 
 ```yaml
 apiVersion: v1alpha1
@@ -17,7 +17,7 @@ targets:
     from: alpine:3.19
     steps:
       - run:
-          command: echo "hello from yamlfile v1alpha1" > /msg.txt
+          command: echo "hello from Yamlfile v1alpha1" > /msg.txt
       - run:
           inline: |
             echo "inline shell logic works" >> /msg.txt
@@ -104,5 +104,5 @@ Build with an override:
 docker buildx build ... --build-arg VERSION=1.2.3 ...
 ```
 
-More examples will be added as the project evolves (multi-file orchestration, explicit platform handling, and intra-build parallel execution are on the roadmap).
+More examples will be added in future releases (multi-file orchestration, explicit platform handling, and intra-build parallel execution are on the roadmap).
 

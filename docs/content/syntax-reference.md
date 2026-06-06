@@ -3,14 +3,14 @@ title: "Syntax Reference (v1alpha1)"
 weight: 20
 ---
 
-This page is the authoritative reference for the structure understood by the `yamlfile` BuildKit frontend.
+This page is the authoritative reference for the structure understood by the `Yamlfile` BuildKit frontend.
 
 > **v1alpha1 MVP status**: The grammar, parser, and graph are forward-compatible (unknown fields are retained via extensions). However, not everything declared in the grammar is fully wired in the current frontend:
 > - `builds:` + `component:target` cross-file orchestration — parsed and graphed but loading/resolution is not yet implemented (only same-file sibling `from:` / `copy.from:` work today).
 > - `defaults.platform` and per-target `platform:` — accepted by the parser but ignored (the frontend follows the platform(s) requested via the BuildKit client / `--platform`).
 > - Full independent parallel execution inside one build request — the graph helpers (`parallelRoots`, reachable ordering) exist and are tested; the actual ToLLB path is intentionally serial for determinism ("For MVP we build serially in reachable order").
 >
-> See `pkg/convert/convert.go` (comments around ToLLB and dispatch*) and `pkg/convert/graph.go` for the current scope. Multi-file and platform support are high priority for the next iteration.
+> See [Development]({{< relref "/development" >}}) for current implementation scope and source layout. Multi-file and platform support are high priority for the next iteration.
 
 ## Top Level
 
@@ -50,7 +50,7 @@ A step has exactly one of `run`, `copy`, `env`, `arg`, `workdir`, `label`, or `e
 
 > **Variable expansion**: Values inside `env.vars`, `arg.vars`, `label.vars`, `workdir.path` (standalone or `run.workdir`), and `run.env` support `$VAR` and `${VAR}` references. These are expanded using BuildKit's shell lexer against CLI `--build-arg` values, `arg:` declarations (with defaults), and any `env:` / `run.env` values set earlier in the same target. Sibling `from:` targets inherit their final `ENV` values for expansion. `from:`, `copy.from`, `script:`, and the bodies of `command`/`inline` are left literal (shell handles `$` inside commands at runtime).
 
-A machine-readable [JSON Schema](https://builderhub.github.io/Yamlfile/schema/v1alpha1.json) is generated from the Go types on every `make docs` (and in CI) and published at `schema/v1alpha1.json` relative to the docs site root. Point `yaml-language-server` or your editor at it for completion, validation, and hover documentation. The schema is the source of truth and always matches the code you are running.
+A machine-readable [JSON Schema](https://builderhub.github.io/Yamlfile/schema/v1alpha1.json) is published alongside the docs site at `schema/v1alpha1.json`. Point `yaml-language-server` or your editor at it for completion, validation, and hover documentation. The schema is the source of truth for the v1alpha1 surface.
 
 ### run
 
@@ -80,7 +80,7 @@ A machine-readable [JSON Schema](https://builderhub.github.io/Yamlfile/schema/v1
         optional: true
 ```
 
-**Quoting tip (common gotcha)**: If your `command:` value contains `key: value` (or looks like a YAML map), quote it or use `inline:` / `script:`. Unquoted `go build -o /out/app .` is fine, but `command: echo foo: bar > /x` can be misparsed by YAML as a map. The examples in this repo always use double quotes or the `|` block form for safety.
+**Quoting tip (common gotcha)**: If your `command:` value contains `key: value` (or looks like a YAML map), quote it or use `inline:` / `script:`. Unquoted `go build -o /out/app .` is fine, but `command: echo foo: bar > /x` can be misparsed by YAML as a map. Prefer double quotes or the `|` block form for safety.
 
 - `script` paths are resolved relative to the build context. The frontend loads the content (via a restricted local source) and makes it available inside the `RUN` via a temporary scratch mount. The script does **not** end up as a layer in the final image unless you explicitly copy it.
 - Secrets are passed using BuildKit's native `--mount=type=secret` mechanism. They are never present in image layers or history.
@@ -132,7 +132,7 @@ You can reference a build arg (CLI or declared) inside later `env:`, `arg:`, or 
 
 ### workdir
 
-Sets the persistent working directory for the remainder of the target (affects the `llb.State` for later steps and the exported image config). This is the moral equivalent of a Dockerfile `WORKDIR` instruction.
+Sets the persistent working directory for the remainder of the target (affects subsequent steps and the exported image config). This is the moral equivalent of a Dockerfile `WORKDIR` instruction.
 
 ```yaml
 - workdir:
@@ -148,13 +148,13 @@ Sets OCI image config labels (the equivalent of Dockerfile `LABEL`). Values supp
 ```yaml
 - label:
     vars:
-      org.opencontainers.image.title: yamlfile
+      org.opencontainers.image.title: Yamlfile
       moby.buildkit.frontend.network.none: "true"
 ```
 
 ### entrypoint
 
-Sets the image config entrypoint (Dockerfile `ENTRYPOINT`). Uses the same invocation fields as `run` (`command`, `inline`, or `script`) but emits image metadata rather than an llb exec.
+Sets the image config entrypoint (Dockerfile `ENTRYPOINT`). Uses the same invocation fields as `run` (`command`, `inline`, or `script`) but emits image metadata rather than executing a build step.
 
 ```yaml
 - entrypoint:
@@ -193,7 +193,7 @@ secrets:
         optional: true
 ```
 
-Both the file form (`target:`) and env-var form (`env:`) are implemented using `llb.AddSecretWithDest` + the appropriate `SecretAsEnvName` / `SecretFileOpt` options. Secrets are **never** present in final image layers or history when used correctly.
+Both the file form (`target:`) and env-var form (`env:`) map to BuildKit's `--mount=type=secret` mechanism. Secrets are **never** present in final image layers or history when used correctly.
 
 ### SecretMount options
 
@@ -238,7 +238,7 @@ targets:
 
 For now, keep everything in one Yamlfile using multiple named targets + sibling references. Full multi-file support (loading, caching, cross-copy) is planned for the next release.
 
-See the note at the top of this page and `pkg/convert/graph.go` (the `builds` map is stored but not traversed for external loading in ToLLB).
+See the MVP note at the top of this page.
 
 
 ## Platform & Defaults — parsed only in v1alpha1

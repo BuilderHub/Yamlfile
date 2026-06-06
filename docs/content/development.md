@@ -29,6 +29,15 @@ make docker-build  # current-arch image tagged localhost... or REGISTRY=... TAG=
 
 See `Makefile` for the full set (including multi-arch push flows used in release).
 
+## CI and release
+
+Image builds and releases are driven by GitHub Actions workflows under `.github/workflows/`:
+
+- `on-pr.yaml` — CI checks on pull requests.
+- `on-release.yaml` — release builds using the reusable buildah workflow pattern for publishing images.
+
+When supplying secrets in CI builds (e.g. registry tokens), use the same `--secret id=...,env=...` or `--secret id=...,src=...` flags as local `docker buildx` invocations.
+
 ## Documentation
 
 ```bash
