@@ -16,12 +16,12 @@ import (
 
 	"github.com/builderhub/yamlfile/pkg/spec/v1alpha1"
 	"github.com/moby/buildkit/client/llb"
+	"github.com/moby/buildkit/client/llb/sourceresolver"
 	"github.com/moby/buildkit/frontend/dockerfile/shell"
 	"github.com/moby/buildkit/frontend/dockerui"
 	gwclient "github.com/moby/buildkit/frontend/gateway/client"
 	ocispecs "github.com/opencontainers/image-spec/specs-go/v1"
 )
-
 
 // ConvertOpt carries context from the frontend (build args, platform, etc.).
 type ConvertOpt struct {
@@ -38,6 +38,8 @@ type ConvertOpt struct {
 	// actually be built for the requested --target (important for multi-target
 	// Yamlfies that reference scripts only in some branches).
 	ScriptLoader func(path string) ([]byte, error)
+	// ImageMetaResolver resolves registry image config for external from: refs.
+	ImageMetaResolver llb.ImageMetaResolver
 }
 
 // Result contains the built LLB state + image config for a target.
@@ -114,7 +116,7 @@ func ToLLB(ctx context.Context, y *v1alpha1.Yamlfile, target string, opt Convert
 			} else if t.From == "scratch" {
 				base = llb.Scratch()
 			} else {
-				base = llb.Image(t.From)
+				base = imageFromRef(t.From, opt)
 			}
 		}
 
@@ -525,8 +527,20 @@ func BuildWithDockerUI(ctx context.Context, dc *dockerui.Client, y *v1alpha1.Yam
 	opt.ScriptLoader = func(path string) ([]byte, error) {
 		return loadFileFromContext(ctx, dc, c, path)
 	}
+	opt.ImageMetaResolver = sourceresolver.NewImageMetaResolver(c)
 
 	return ToLLB(ctx, y, target, opt)
+}
+
+func imageFromRef(ref string, opt ConvertOpt) llb.State {
+	opts := []llb.ImageOption{}
+	if opt.ImageMetaResolver != nil {
+		opts = append(opts, llb.WithMetaResolver(opt.ImageMetaResolver))
+	}
+	if opt.Platform != nil {
+		opts = append(opts, llb.Platform(*opt.Platform))
+	}
+	return llb.Image(ref, opts...)
 }
 
 // loadFileFromContext mirrors dockerui ReadEntrypoint logic but for arbitrary context file (used for scripts).
