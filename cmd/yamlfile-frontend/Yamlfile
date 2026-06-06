@@ -25,6 +25,10 @@ targets:
           dest: "/src/"
       - run:
           command: apk add --no-cache git file
+      # golang puts go on PATH via image ENV; explicit PATH helps bootstrap against older frontends.
+      - env:
+          vars:
+            PATH: "/go/bin:/usr/local/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
       - run:
           script: cmd/yamlfile-frontend/scripts/build.sh
           env:
