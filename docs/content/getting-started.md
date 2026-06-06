@@ -80,6 +80,6 @@ See the [Secrets]({{< relref "/features/secrets" >}}) page for details on file v
 
 ## Next Steps
 
-- Read the [Syntax Reference]({{< relref "/syntax-reference" >}}) for the full v1alpha1 grammar.
+- Read the [Syntax Reference]({{< relref "/syntax-reference" >}}) for the full grammar.
 - Look at [Examples]({{< relref "/examples" >}}).
 - See [Development]({{< relref "/development" >}}) for implementation details and contributor setup.

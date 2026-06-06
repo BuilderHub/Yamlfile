@@ -1,11 +1,11 @@
 ---
-title: "Syntax Reference (v1alpha1)"
+title: "Syntax Reference"
 weight: 20
 ---
 
 This page is the authoritative reference for the structure understood by the `Yamlfile` BuildKit frontend.
 
-> **v1alpha1 MVP status**: The grammar, parser, and graph are forward-compatible (unknown fields are retained via extensions). However, not everything declared in the grammar is fully wired in the current frontend:
+> **MVP status**: The grammar, parser, and graph are forward-compatible (unknown fields are retained via extensions). However, not everything declared in the grammar is fully wired in the current frontend:
 > - `builds:` + `component:target` cross-file orchestration — parsed and graphed but loading/resolution is not yet implemented (only same-file sibling `from:` / `copy.from:` work today).
 > - `defaults.platform` and per-target `platform:` — accepted by the parser but ignored (the frontend follows the platform(s) requested via the BuildKit client / `--platform`).
 > - Full independent parallel execution inside one build request — the graph helpers (`parallelRoots`, reachable ordering) exist and are tested; the actual ToLLB path is intentionally serial for determinism ("For MVP we build serially in reachable order").
@@ -50,7 +50,7 @@ A step has exactly one of `run`, `copy`, `env`, `arg`, `workdir`, `label`, or `e
 
 > **Variable expansion**: Values inside `env.vars`, `arg.vars`, `label.vars`, `workdir.path` (standalone or `run.workdir`), and `run.env` support `$VAR` and `${VAR}` references. These are expanded using BuildKit's shell lexer against CLI `--build-arg` values, `arg:` declarations (with defaults), and any `env:` / `run.env` values set earlier in the same target. Sibling `from:` targets inherit their final `ENV` values for expansion. `from:`, `copy.from`, `script:`, and the bodies of `command`/`inline` are left literal (shell handles `$` inside commands at runtime).
 
-A machine-readable [JSON Schema](https://builderhub.github.io/Yamlfile/schema/v1alpha1.json) is published alongside the docs site at `schema/v1alpha1.json`. Point `yaml-language-server` or your editor at it for completion, validation, and hover documentation. The schema is the source of truth for the v1alpha1 surface.
+A machine-readable [JSON Schema](https://builderhub.github.io/Yamlfile/schema/v1alpha1.json) is published alongside the docs site at `schema/v1alpha1.json`. Point `yaml-language-server` or your editor at it for completion, validation, and hover documentation. The schema is the source of truth for the supported Yamlfile surface.
 
 ### run
 
@@ -165,7 +165,7 @@ Semantics differ from `run` for `command`:
 
 - **`entrypoint.command`**: exec-form — the string is shlex-split into argv (maps to `ENTRYPOINT ["/bin/foo"]`). No `/bin/sh -c` wrapper.
 - **`entrypoint.inline`**: shell-form — prepends the image shell (e.g. `/bin/sh -c`), like Dockerfile shell `ENTRYPOINT`.
-- **`entrypoint.script`**: not supported in v1alpha1 (`script` is a build-time mount mechanism for `run` only).
+- **`entrypoint.script`**: not supported yet (`script` is a build-time mount mechanism for `run` only).
 
 ## Secrets
 
@@ -214,7 +214,7 @@ Use either `target:` (file form) or `env:` (env form), not both on the same entr
 See [Features / Secrets]({{< relref "/features/secrets" >}}) for supply examples (`--secret id=...,env=...` or `src=...`) and the exact option semantics.
 
 
-## Multi-file / Orchestration (`builds:`) — grammar only in v1alpha1
+## Multi-file / Orchestration (`builds:`) — grammar only (not yet implemented)
 
 The grammar and dependency graph prep support declaring other Yamlfiles:
 
@@ -234,14 +234,14 @@ targets:
           dest: "/torch"
 ```
 
-**Current status (v1alpha1 MVP)**: `builds:` entries and the `component:target` form are parsed and appear in the graph for forward compatibility and tooling, but the frontend does **not** yet load external Yamlfiles or wire cross-file state. Only same-file sibling targets (via `from:` or `copy.from:` using a bare target name) are resolved today.
+**Current status**: `builds:` entries and the `component:target` form are parsed and appear in the graph for forward compatibility and tooling, but the frontend does **not** yet load external Yamlfiles or wire cross-file state. Only same-file sibling targets (via `from:` or `copy.from:` using a bare target name) are resolved today.
 
 For now, keep everything in one Yamlfile using multiple named targets + sibling references. Full multi-file support (loading, caching, cross-copy) is planned for the next release.
 
 See the MVP note at the top of this page.
 
 
-## Platform & Defaults — parsed only in v1alpha1
+## Platform & Defaults — parsed only (not yet applied)
 
 ```yaml
 defaults:
@@ -253,7 +253,7 @@ targets:
     platform: linux/arm64   # overrides default for this target
 ```
 
-**Current status**: The fields exist in the types and survive parsing (for forward-compat and so that linters/docs tools can see the intent). However, the v1alpha1 frontend does not yet read `defaults.platform` or per-target `platform:` — it always uses the platform(s) requested by the BuildKit client (e.g. `docker buildx build --platform linux/amd64,linux/arm64 ...` or the default of the builder).
+**Current status**: The fields exist in the types and survive parsing (for forward-compat and so that linters/docs tools can see the intent). However, the frontend does not yet read `defaults.platform` or per-target `platform:` — it always uses the platform(s) requested by the BuildKit client (e.g. `docker buildx build --platform linux/amd64,linux/arm64 ...` or the default of the builder).
 
 See the MVP note at the top of the page.
 
@@ -261,4 +261,4 @@ See the MVP note at the top of the page.
 
 All top-level objects and step types accept an `Extensions` map (via YAML `<<` or unknown keys) so future fields can be added without breaking existing documents.
 
-Unknown step kinds or required fields that are missing will produce clear errors at parse / conversion time in the current v1alpha1 implementation.
+Unknown step kinds or required fields that are missing will produce clear errors at parse / conversion time.

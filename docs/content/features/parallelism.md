@@ -11,8 +11,8 @@ The actual execution parallelism comes from two places:
 1. The frontend constructing independent sub-DAGs (potentially concurrently).
 2. BuildKit's own solver running independent operations in parallel.
 
-In the v1alpha1 implementation the build within a single requested target is still largely serial (for simplicity and determinism), but independent top-level targets are naturally parallelizable by the graph.
+Today the build within a single requested target is still largely serial (for simplicity and determinism), but independent top-level targets are naturally parallelizable by the graph.
 
 Future iterations may add explicit concurrent execution of independent roots inside one build request.
 
-See the "v1alpha1 MVP status" note in the [Syntax Reference]({{< relref "/syntax-reference" >}}) for the current serial execution reality inside a single requested target (the graph prep is honest; the ToLLB path is intentionally serial today).
+See the "MVP status" note in the [Syntax Reference]({{< relref "/syntax-reference" >}}) for the current serial execution reality inside a single requested target (the graph prep is honest; the ToLLB path is intentionally serial today).

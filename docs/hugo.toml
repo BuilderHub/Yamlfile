@@ -10,7 +10,7 @@ pygmentsStyle = 'monokai'
 disableKinds = ["taxonomy", "term"]
 
 [params]
-  description = 'BuildKit frontend (v1alpha1) for intuitive, declarative, parallel, multi-file, secret-aware builds.'
+  description = 'BuildKit frontend for intuitive, declarative, parallel, multi-file, secret-aware builds.'
   author = 'BuilderHub'
   # Useful for "edit this page" links if we add partials later
   github_repo = 'https://github.com/BuilderHub/Yamlfile'

@@ -17,7 +17,7 @@ targets:
     from: alpine:3.19
     steps:
       - run:
-          command: echo "hello from Yamlfile v1alpha1" > /msg.txt
+          command: echo "hello from Yamlfile" > /msg.txt
       - run:
           inline: |
             echo "inline shell logic works" >> /msg.txt
@@ -47,7 +47,7 @@ See the complete, self-contained file + supporting script:
 - `examples/multi-target.Yamlfile`
 - `examples/scripts/prepare.sh`
 
-The example is fully runnable today (uses only implemented v1alpha1 features). Because the leaf target is named `default`, you do not need `--target`:
+The example is fully runnable today (uses only currently implemented features). Because the leaf target is named `default`, you do not need `--target`:
 
 ```bash
 docker buildx build -f examples/multi-target.Yamlfile \
