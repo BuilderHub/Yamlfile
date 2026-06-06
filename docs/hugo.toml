@@ -24,7 +24,14 @@ disableKinds = ["taxonomy", "term"]
     startLevel = 2
     endLevel = 3
 
+[outputFormats]
+  [outputFormats.SearchIndex]
+    mediaType = "application/json"
+    baseName = "search-index"
+    isPlainText = true
+    notAlternative = true
+
 [outputs]
-  home = ["HTML", "RSS"]
+  home = ["HTML", "RSS", "SearchIndex"]
   section = ["HTML", "RSS"]
   page = ["HTML"]

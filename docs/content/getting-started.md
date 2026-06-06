@@ -16,7 +16,7 @@ The official images are published to `ghcr.io/builderhub/yamlfile`.
 
 In your `Yamlfile` (or any file you pass with `-f`):
 
-```dockerfile
+```yaml
 # syntax=ghcr.io/builderhub/yamlfile:latest
 apiVersion: v1alpha1
 
@@ -31,7 +31,7 @@ targets:
 Then build with:
 
 ```bash
-docker buildx build -f MyYamlfile.yaml \
+docker buildx build -f MyYamlfile \
   --output type=image,name=myapp,push=false \
   .
 ```
@@ -39,7 +39,7 @@ docker buildx build -f MyYamlfile.yaml \
 If your Yamlfile defines multiple top-level targets and you don't want the default (first reachable), pass `--target`:
 
 ```bash
-docker buildx build -f MyYamlfile.yaml \
+docker buildx build -f MyYamlfile \
   --target myapp \
   --output type=image,name=myapp,push=false \
   .

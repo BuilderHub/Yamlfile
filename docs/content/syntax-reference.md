@@ -50,9 +50,7 @@ A step has exactly one of `run`, `copy`, `env`, `arg`, `workdir`, `label`, or `e
 
 > **Variable expansion**: Values inside `env.vars`, `arg.vars`, `label.vars`, `workdir.path` (standalone or `run.workdir`), and `run.env` support `$VAR` and `${VAR}` references. These are expanded using BuildKit's shell lexer against CLI `--build-arg` values, `arg:` declarations (with defaults), and any `env:` / `run.env` values set earlier in the same target. Sibling `from:` targets inherit their final `ENV` values for expansion. `from:`, `copy.from`, `script:`, and the bodies of `command`/`inline` are left literal (shell handles `$` inside commands at runtime).
 
-A machine-readable **JSON Schema** is automatically generated from the Go types on every `make docs` (and in CI) and published alongside the site:
-`schema/v1alpha1.json` (relative to the docs root; e.g. https://builderhub.github.io/Yamlfile/schema/v1alpha1.json).
-Point `yaml-language-server` or your editor at it for completion, validation, and hover documentation. The schema is the source of truth and always matches the code you are running.
+A machine-readable [JSON Schema](https://builderhub.github.io/Yamlfile/schema/v1alpha1.json) is generated from the Go types on every `make docs` (and in CI) and published at `schema/v1alpha1.json` relative to the docs site root. Point `yaml-language-server` or your editor at it for completion, validation, and hover documentation. The schema is the source of truth and always matches the code you are running.
 
 ### run
 
@@ -83,7 +81,6 @@ Point `yaml-language-server` or your editor at it for completion, validation, an
 ```
 
 **Quoting tip (common gotcha)**: If your `command:` value contains `key: value` (or looks like a YAML map), quote it or use `inline:` / `script:`. Unquoted `go build -o /out/app .` is fine, but `command: echo foo: bar > /x` can be misparsed by YAML as a map. The examples in this repo always use double quotes or the `|` block form for safety.
-```
 
 - `script` paths are resolved relative to the build context. The frontend loads the content (via a restricted local source) and makes it available inside the `RUN` via a temporary scratch mount. The script does **not** end up as a layer in the final image unless you explicitly copy it.
 - Secrets are passed using BuildKit's native `--mount=type=secret` mechanism. They are never present in image layers or history.
@@ -197,6 +194,22 @@ secrets:
 ```
 
 Both the file form (`target:`) and env-var form (`env:`) are implemented using `llb.AddSecretWithDest` + the appropriate `SecretAsEnvName` / `SecretFileOpt` options. Secrets are **never** present in final image layers or history when used correctly.
+
+### SecretMount options
+
+Each entry in a `run.secrets` list supports:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string (required) | Secret identifier; must match `--secret id=...` at build time |
+| `target` | string | File path inside the run (default: `/run/secrets/<id>`) |
+| `env` | string | Inject as an environment variable instead of a file (value masked in logs) |
+| `optional` | bool | If true, the run proceeds when the secret is not supplied |
+| `mode` | int | File permission bits (e.g. `0600`) |
+| `uid` | int | Owner UID for the mounted secret file |
+| `gid` | int | Owner GID for the mounted secret file |
+
+Use either `target:` (file form) or `env:` (env form), not both on the same entry.
 
 See [Features / Secrets]({{< relref "/features/secrets" >}}) for supply examples (`--secret id=...,env=...` or `src=...`) and the exact option semantics.
 

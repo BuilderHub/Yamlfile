@@ -37,9 +37,10 @@ make docs-serve  # live reload at http://localhost:1313
 ```
 
 - Edit files under `docs/content/`.
-- Frontmatter `title:` + `weight:` controls ordering in lists/ToC.
-- Internal links: use the `relref` shortcode (e.g. `[text]({{</* relref "/getting-started" */>}})) so they resolve correctly under the `baseURL` sub-path (e.g. `/yamlfile/`).
+- Frontmatter `title:` + `weight:` controls ordering in the sidebar toctree and section lists.
+- Internal links: use the `relref` shortcode (e.g. `[text]({{</* relref "/getting-started" */>}})) so they resolve correctly under the `baseURL` sub-path (e.g. `/Yamlfile/`).
 - Run `make docs` (or the CI check) before pushing; it must succeed with no errors.
+- Navigation: a persistent sidebar toctree (`docs/layouts/partials/toctree.html`) replaces the old per-page "On this page" heading TOC. Search uses a Hugo-generated `search-index.json` plus client-side Fuse.js (`docs/static/js/`).
 - The site is intentionally lightweight (custom layouts + a few partials + small CSS). A full theme (e.g. via Hugo modules) can be adopted later.
 
 ## How docs deployment works
