@@ -1,0 +1,48 @@
+# syntax=ghcr.io/builderhub/yamlfile:latest
+#
+# Build the yamlfile BuildKit frontend image using yamlfile (dogfooding).
+# Bootstrap: requires an existing yamlfile image (see SYNTAX_IMAGE in Makefile).
+#
+#   docker buildx build -f cmd/yamlfile-frontend/Yamlfile \
+#     --build-arg BUILDKIT_SYNTAX=ghcr.io/builderhub/yamlfile:latest \
+#     --build-arg VERSION=v1alpha1-dev \
+#     -t ghcr.io/builderhub/yamlfile:dev --load .
+
+apiVersion: v1alpha1
+
+targets:
+  build:
+    from: golang:1.25-alpine3.23
+    steps:
+      - workdir:
+          path: /src
+      - arg:
+          vars:
+            VERSION: v1alpha1-dev
+      - copy:
+          from: context
+          src: ["."]
+          dest: "/src/"
+      - run:
+          command: apk add --no-cache git file
+      - run:
+          script: cmd/yamlfile-frontend/scripts/build.sh
+          env:
+            CGO_ENABLED: "0"
+
+  default:
+    from: scratch
+    steps:
+      - copy:
+          from: build
+          src: ["/yamlfile-frontend"]
+          dest: "/bin/yamlfile-frontend"
+      - label:
+          vars:
+            moby.buildkit.frontend.network.none: "true"
+            moby.buildkit.frontend.caps: "moby.buildkit.frontend.inputs,moby.buildkit.frontend.subrequests,moby.buildkit.frontend.contexts,moby.buildkit.frontend.gitquerystring"
+            org.opencontainers.image.title: yamlfile
+            org.opencontainers.image.description: "BuildKit frontend for Yamlfile (v1alpha1) - easier multi-target, parallel, secret-aware builds"
+            org.opencontainers.image.vendor: BuilderHub
+      - entrypoint:
+          command: "/bin/yamlfile-frontend"

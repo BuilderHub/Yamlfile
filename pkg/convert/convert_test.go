@@ -98,3 +98,54 @@ func TestToLLB_ArgEnvWorkdir_Basic(t *testing.T) {
 		t.Errorf("expected WorkingDir=/work, got %q", r.Image.Config.WorkingDir)
 	}
 }
+
+func TestToLLB_LabelEntrypoint_Basic(t *testing.T) {
+	y := &spec.Yamlfile{
+		APIVersion: "v1alpha1",
+		Targets: map[string]spec.TargetSpec{
+			"release": {
+				From: "scratch",
+				Steps: []spec.Step{
+					{
+						Label: &spec.LabelSpec{
+							Vars: map[string]string{
+								"org.opencontainers.image.title": "yamlfile",
+								"moby.buildkit.frontend.network.none": "true",
+							},
+						},
+					},
+					{
+						Entrypoint: &spec.EntrypointSpec{
+							Command: "/bin/yamlfile-frontend",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	opt := ConvertOpt{
+		Platform: &ocispecs.Platform{OS: "linux", Architecture: "amd64"},
+		ScriptLoader: func(string) ([]byte, error) {
+			return nil, nil
+		},
+	}
+
+	res, err := ToLLB(context.Background(), y, "release", opt)
+	if err != nil {
+		t.Fatalf("ToLLB: %v", err)
+	}
+	r, ok := res["release"]
+	if !ok {
+		t.Fatal("no result for release")
+	}
+	if r.Image == nil {
+		t.Fatal("no image config")
+	}
+	if r.Image.Config.Labels["org.opencontainers.image.title"] != "yamlfile" {
+		t.Errorf("unexpected labels: %v", r.Image.Config.Labels)
+	}
+	if len(r.Image.Config.Entrypoint) != 1 || r.Image.Config.Entrypoint[0] != "/bin/yamlfile-frontend" {
+		t.Errorf("unexpected entrypoint: %v", r.Image.Config.Entrypoint)
+	}
+}

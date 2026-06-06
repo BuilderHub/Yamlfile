@@ -73,7 +73,42 @@
       },
       "type": "object"
     },
+    "EntrypointSpec": {
+      "additionalProperties": true,
+      "properties": {
+        "command": {
+          "type": "string"
+        },
+        "extensions": {
+          "additionalProperties": {},
+          "type": "object"
+        },
+        "inline": {
+          "type": "string"
+        },
+        "script": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "EnvSpec": {
+      "additionalProperties": true,
+      "properties": {
+        "extensions": {
+          "additionalProperties": {},
+          "type": "object"
+        },
+        "vars": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "LabelSpec": {
       "additionalProperties": true,
       "properties": {
         "extensions": {
@@ -245,6 +280,28 @@
           "required": [
             "workdir"
           ]
+        },
+        {
+          "additionalProperties": true,
+          "properties": {
+            "label": {
+              "$ref": "#/$defs/LabelSpec"
+            }
+          },
+          "required": [
+            "label"
+          ]
+        },
+        {
+          "additionalProperties": true,
+          "properties": {
+            "entrypoint": {
+              "$ref": "#/$defs/EntrypointSpec"
+            }
+          },
+          "required": [
+            "entrypoint"
+          ]
         }
       ],
       "type": "object"
@@ -307,6 +364,25 @@
                 ],
                 "type": "object"
               },
+              "entrypoint": {
+                "additionalProperties": true,
+                "properties": {
+                  "command": {
+                    "type": "string"
+                  },
+                  "extensions": {
+                    "additionalProperties": {},
+                    "type": "object"
+                  },
+                  "inline": {
+                    "type": "string"
+                  },
+                  "script": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
               "env": {
                 "additionalProperties": true,
                 "properties": {
@@ -325,6 +401,22 @@
               },
               "extensions": {
                 "additionalProperties": {},
+                "type": "object"
+              },
+              "label": {
+                "additionalProperties": true,
+                "properties": {
+                  "extensions": {
+                    "additionalProperties": {},
+                    "type": "object"
+                  },
+                  "vars": {
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "type": "object"
+                  }
+                },
                 "type": "object"
               },
               "run": {
@@ -545,6 +637,25 @@
                       ],
                       "type": "object"
                     },
+                    "entrypoint": {
+                      "additionalProperties": true,
+                      "properties": {
+                        "command": {
+                          "type": "string"
+                        },
+                        "extensions": {
+                          "additionalProperties": {},
+                          "type": "object"
+                        },
+                        "inline": {
+                          "type": "string"
+                        },
+                        "script": {
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    },
                     "env": {
                       "additionalProperties": true,
                       "properties": {
@@ -563,6 +674,22 @@
                     },
                     "extensions": {
                       "additionalProperties": {},
+                      "type": "object"
+                    },
+                    "label": {
+                      "additionalProperties": true,
+                      "properties": {
+                        "extensions": {
+                          "additionalProperties": {},
+                          "type": "object"
+                        },
+                        "vars": {
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "type": "object"
+                        }
+                      },
                       "type": "object"
                     },
                     "run": {

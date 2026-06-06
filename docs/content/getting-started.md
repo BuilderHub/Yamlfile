@@ -65,6 +65,8 @@ docker buildx build -f examples/minimal.Yamlfile \
 
 See the `Makefile` targets (`make docker-build`, `make docker-build-multiarch`) for the canonical commands used in CI/release. (Run `make` from the yamlfile directory, or `make -C /path/to/yamlfile ...`.) The source is at the root of the repository.
 
+To dogfood the Yamlfile-based frontend image build (requires a published yamlfile image as bootstrap), use `make docker-build-from-yamlfile`.
+
 ## Supplying Secrets
 
 yamlfile passes secrets through to BuildKit's native secret mechanism. Example:
