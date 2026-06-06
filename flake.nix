@@ -34,7 +34,7 @@
           shellHook = ''
             echo "yamlfile dev shell (Go $(go version))"
             echo "Run docker buildx from the yamlfile/ directory (or use make):"
-            echo "  docker buildx build -f cmd/yamlfile-frontend/Dockerfile -t localhost:5000/yamlfile:dev --load ."
+            echo "  docker buildx build -f cmd/yamlfile-frontend/Yamlfile --build-arg BUILDKIT_SYNTAX=ghcr.io/builderhub/yamlfile:latest -t localhost:5000/yamlfile:dev --load ."
             echo "  docker buildx build -f examples/minimal.Yamlfile --build-arg BUILDKIT_SYNTAX=localhost:5000/yamlfile:dev --output type=local,dest=/tmp/out ."
             echo "Or: make docker-build"
             echo "Docs: make docs-serve (serves at http://localhost:1313/) or nix develop --command hugo server -s docs --baseURL http://localhost:1313/"

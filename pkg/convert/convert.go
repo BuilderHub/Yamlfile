@@ -111,6 +111,8 @@ func ToLLB(ctx context.Context, y *v1alpha1.Yamlfile, target string, opt Convert
 				} else {
 					return nil, fmt.Errorf("target %s depends on unknown or not-yet-built %s", name, t.From)
 				}
+			} else if t.From == "scratch" {
+				base = llb.Scratch()
 			} else {
 				base = llb.Image(t.From)
 			}
@@ -224,6 +226,20 @@ func ToLLB(ctx context.Context, y *v1alpha1.Yamlfile, target string, opt Convert
 				st = st.Dir(ep)
 				img.Config.WorkingDir = ep
 			}
+			if step.Label != nil {
+				var err error
+				img, err = dispatchLabel(img, step.Label, currentVars)
+				if err != nil {
+					return nil, fmt.Errorf("label in target %s: %w", name, err)
+				}
+			}
+			if step.Entrypoint != nil {
+				var err error
+				img, err = dispatchEntrypoint(img, step.Entrypoint, currentVars)
+				if err != nil {
+					return nil, fmt.Errorf("entrypoint in target %s: %w", name, err)
+				}
+			}
 		}
 
 		states[name] = st
@@ -235,6 +251,54 @@ func ToLLB(ctx context.Context, y *v1alpha1.Yamlfile, target string, opt Convert
 		res[n] = Result{State: states[n], Image: images[n]}
 	}
 	return res, nil
+}
+
+func dispatchLabel(img *ocispecs.Image, l *v1alpha1.LabelSpec, env map[string]string) (*ocispecs.Image, error) {
+	if img.Config.Labels == nil {
+		img.Config.Labels = map[string]string{}
+	}
+	for k, v := range l.Vars {
+		lv, err := expand(v, env)
+		if err != nil {
+			return img, fmt.Errorf("expand label %s: %w", k, err)
+		}
+		img.Config.Labels[k] = lv
+	}
+	return img, nil
+}
+
+func dispatchEntrypoint(img *ocispecs.Image, e *v1alpha1.EntrypointSpec, env map[string]string) (*ocispecs.Image, error) {
+	if e.Script != "" {
+		return img, fmt.Errorf("entrypoint does not support script in v1alpha1 (use command or inline)")
+	}
+	var args []string
+	if e.Command != "" {
+		expanded, err := expand(e.Command, env)
+		if err != nil {
+			return img, fmt.Errorf("expand entrypoint command: %w", err)
+		}
+		lex := shell.NewLex('\\')
+		args, err = lex.ProcessWords(expanded, mapEnvGetter(env))
+		if err != nil {
+			return img, fmt.Errorf("parse entrypoint command: %w", err)
+		}
+	} else if e.Inline != "" {
+		args = withShell(img, []string{e.Inline})
+	}
+	img.Config.Entrypoint = args
+	return img, nil
+}
+
+func withShell(img *ocispecs.Image, args []string) []string {
+	sh := defaultShell(img.OS)
+	return append(sh, strings.Join(args, " "))
+}
+
+func defaultShell(os string) []string {
+	if os == "windows" {
+		return []string{"cmd", "/S", "/C"}
+	}
+	return []string{"/bin/sh", "-c"}
 }
 
 func dispatchRun(st llb.State, img *ocispecs.Image, r *v1alpha1.RunSpec, opt ConvertOpt, extraExecEnvs map[string]string) (llb.State, *ocispecs.Image) {

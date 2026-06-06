@@ -51,7 +51,8 @@ From the yamlfile directory:
 
 ```bash
 docker buildx build \
-  -f cmd/yamlfile-frontend/Dockerfile \
+  -f cmd/yamlfile-frontend/Yamlfile \
+  --build-arg BUILDKIT_SYNTAX=ghcr.io/builderhub/yamlfile:latest \
   -t localhost:5000/yamlfile:dev \
   --load \
   .

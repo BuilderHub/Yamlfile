@@ -68,6 +68,8 @@ func buildSchema() rootSchema {
 	defs["EnvSpec"] = schemaFor(reflect.TypeOf(spec.EnvSpec{}), defs)
 	defs["ArgSpec"] = schemaFor(reflect.TypeOf(spec.ArgSpec{}), defs)
 	defs["WorkdirSpec"] = schemaFor(reflect.TypeOf(spec.WorkdirSpec{}), defs)
+	defs["LabelSpec"] = schemaFor(reflect.TypeOf(spec.LabelSpec{}), defs)
+	defs["EntrypointSpec"] = schemaFor(reflect.TypeOf(spec.EntrypointSpec{}), defs)
 	defs["SecretMount"] = schemaFor(reflect.TypeOf(spec.SecretMount{}), defs)
 
 	root := rootSchema{
@@ -90,6 +92,8 @@ func stepDiscriminatedUnion(_ map[string]interface{}) map[string]interface{} {
 		{"required": []string{"env"}, "properties": map[string]interface{}{"env": map[string]interface{}{"$ref": "#/$defs/EnvSpec"}}},
 		{"required": []string{"arg"}, "properties": map[string]interface{}{"arg": map[string]interface{}{"$ref": "#/$defs/ArgSpec"}}},
 		{"required": []string{"workdir"}, "properties": map[string]interface{}{"workdir": map[string]interface{}{"$ref": "#/$defs/WorkdirSpec"}}},
+		{"required": []string{"label"}, "properties": map[string]interface{}{"label": map[string]interface{}{"$ref": "#/$defs/LabelSpec"}}},
+		{"required": []string{"entrypoint"}, "properties": map[string]interface{}{"entrypoint": map[string]interface{}{"$ref": "#/$defs/EntrypointSpec"}}},
 	}
 	// Also allow the extension fields at the step level (forward compat).
 	for i := range arms {

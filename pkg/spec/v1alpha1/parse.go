@@ -42,7 +42,7 @@ func Load(data []byte) (*Yamlfile, error) {
 		}
 	}
 
-	// Step validation: each step must declare exactly one kind (run/copy/env/arg/workdir).
+	// Step validation: each step must declare exactly one kind.
 	// This prevents ambiguous or empty steps at parse time (Go struct allows multiple
 	// because of how yaml unmarshal + our discriminated union works).
 	for tname, t := range y.Targets {
@@ -63,8 +63,19 @@ func Load(data []byte) (*Yamlfile, error) {
 			if s.Workdir != nil {
 				kinds++
 			}
+			if s.Label != nil {
+				kinds++
+			}
+			if s.Entrypoint != nil {
+				kinds++
+			}
 			if kinds != 1 {
-				return nil, fmt.Errorf("target %q step %d must specify exactly one of: run, copy, env, arg, or workdir", tname, i)
+				return nil, fmt.Errorf("target %q step %d must specify exactly one of: run, copy, env, arg, workdir, label, or entrypoint", tname, i)
+			}
+			if s.Entrypoint != nil {
+				if err := validateEntrypoint(tname, i, s.Entrypoint); err != nil {
+					return nil, err
+				}
 			}
 		}
 	}
@@ -72,6 +83,23 @@ func Load(data []byte) (*Yamlfile, error) {
 	// TODO(v1): deeper validation (cycles live in convert/graph; circular file refs, missing builds, etc.)
 
 	return &y, nil
+}
+
+func validateEntrypoint(tname string, idx int, e *EntrypointSpec) error {
+	forms := 0
+	if e.Command != "" {
+		forms++
+	}
+	if e.Inline != "" {
+		forms++
+	}
+	if e.Script != "" {
+		forms++
+	}
+	if forms != 1 {
+		return fmt.Errorf("target %q entrypoint step %d must specify exactly one of: command, inline, or script", tname, idx)
+	}
+	return nil
 }
 
 // MustLoad is for tests.

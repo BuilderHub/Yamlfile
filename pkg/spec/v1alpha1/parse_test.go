@@ -102,6 +102,50 @@ targets:
 	}
 }
 
+func TestLoad_AllowsLabelAndEntrypointSteps(t *testing.T) {
+	y, err := Load([]byte(`
+apiVersion: v1alpha1
+targets:
+  t:
+    from: scratch
+    steps:
+      - label:
+          vars:
+            org.opencontainers.image.title: yamlfile
+      - entrypoint:
+          command: "/bin/yamlfile-frontend"
+`))
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	steps := y.Targets["t"].Steps
+	if len(steps) != 2 {
+		t.Fatalf("expected 2 steps, got %d", len(steps))
+	}
+	if steps[0].Label == nil || steps[0].Label.Vars["org.opencontainers.image.title"] != "yamlfile" {
+		t.Errorf("unexpected label step: %+v", steps[0].Label)
+	}
+	if steps[1].Entrypoint == nil || steps[1].Entrypoint.Command != "/bin/yamlfile-frontend" {
+		t.Errorf("unexpected entrypoint step: %+v", steps[1].Entrypoint)
+	}
+}
+
+func TestLoad_RejectsEntrypointWithMultipleForms(t *testing.T) {
+	_, err := Load([]byte(`
+apiVersion: v1alpha1
+targets:
+  t:
+    from: scratch
+    steps:
+      - entrypoint:
+          command: "/bin/foo"
+          inline: echo foo
+`))
+	if err == nil || !contains(err.Error(), "exactly one of") {
+		t.Errorf("expected exactly one of error, got %v", err)
+	}
+}
+
 func TestLoad_RejectsMixedStepKinds(t *testing.T) {
 	_, err := Load([]byte(`
 apiVersion: v1alpha1

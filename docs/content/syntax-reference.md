@@ -46,9 +46,9 @@ my-target:
 
 ## Step (discriminated union)
 
-A step has exactly one of `run`, `copy`, `env`, `arg`, or `workdir`.
+A step has exactly one of `run`, `copy`, `env`, `arg`, `workdir`, `label`, or `entrypoint`.
 
-> **Variable expansion**: Values inside `env.vars`, `arg.vars`, `workdir.path` (standalone or `run.workdir`), and `run.env` support `$VAR` and `${VAR}` references. These are expanded using BuildKit's shell lexer against CLI `--build-arg` values, `arg:` declarations (with defaults), and any `env:` / `run.env` values set earlier in the same target. Sibling `from:` targets inherit their final `ENV` values for expansion. `from:`, `copy.from`, `script:`, and the bodies of `command`/`inline` are left literal (shell handles `$` inside commands at runtime).
+> **Variable expansion**: Values inside `env.vars`, `arg.vars`, `label.vars`, `workdir.path` (standalone or `run.workdir`), and `run.env` support `$VAR` and `${VAR}` references. These are expanded using BuildKit's shell lexer against CLI `--build-arg` values, `arg:` declarations (with defaults), and any `env:` / `run.env` values set earlier in the same target. Sibling `from:` targets inherit their final `ENV` values for expansion. `from:`, `copy.from`, `script:`, and the bodies of `command`/`inline` are left literal (shell handles `$` inside commands at runtime).
 
 A machine-readable **JSON Schema** is automatically generated from the Go types on every `make docs` (and in CI) and published alongside the site:
 `schema/v1alpha1.json` (relative to the docs root; e.g. https://builderhub.github.io/Yamlfile/schema/v1alpha1.json).
@@ -143,6 +143,32 @@ Sets the persistent working directory for the remainder of the target (affects t
 ```
 
 Subsequent `run` steps (and `copy` destinations that are relative) will be relative to this directory. A later `workdir:` overrides it. Per-run overrides are available via `run.workdir` (see above).
+
+### label
+
+Sets OCI image config labels (the equivalent of Dockerfile `LABEL`). Values support `${VAR}` / `$VAR` expansion.
+
+```yaml
+- label:
+    vars:
+      org.opencontainers.image.title: yamlfile
+      moby.buildkit.frontend.network.none: "true"
+```
+
+### entrypoint
+
+Sets the image config entrypoint (Dockerfile `ENTRYPOINT`). Uses the same invocation fields as `run` (`command`, `inline`, or `script`) but emits image metadata rather than an llb exec.
+
+```yaml
+- entrypoint:
+    command: "/bin/yamlfile-frontend"
+```
+
+Semantics differ from `run` for `command`:
+
+- **`entrypoint.command`**: exec-form — the string is shlex-split into argv (maps to `ENTRYPOINT ["/bin/foo"]`). No `/bin/sh -c` wrapper.
+- **`entrypoint.inline`**: shell-form — prepends the image shell (e.g. `/bin/sh -c`), like Dockerfile shell `ENTRYPOINT`.
+- **`entrypoint.script`**: not supported in v1alpha1 (`script` is a build-time mount mechanism for `run` only).
 
 ## Secrets
 

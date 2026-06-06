@@ -41,12 +41,14 @@ type BuildRef struct {
 // Step is a discriminated union for pipeline steps. New kinds can be added
 // without breaking old parsers (unknown Kind will error in v1alpha1 but is captured).
 type Step struct {
-	Run     *RunSpec     `yaml:"run,omitempty"`
-	Copy    *CopySpec    `yaml:"copy,omitempty"`
-	Env     *EnvSpec     `yaml:"env,omitempty"`
-	Arg     *ArgSpec     `yaml:"arg,omitempty"`
-	Workdir *WorkdirSpec `yaml:"workdir,omitempty"`
-	// Future: User, Label, Entrypoint, Cmd, Expose etc. as *XXXSpec
+	Run        *RunSpec        `yaml:"run,omitempty"`
+	Copy       *CopySpec       `yaml:"copy,omitempty"`
+	Env        *EnvSpec        `yaml:"env,omitempty"`
+	Arg        *ArgSpec        `yaml:"arg,omitempty"`
+	Workdir    *WorkdirSpec    `yaml:"workdir,omitempty"`
+	Label      *LabelSpec      `yaml:"label,omitempty"`
+	Entrypoint *EntrypointSpec `yaml:"entrypoint,omitempty"`
+	// Future: User, Cmd, Expose etc. as *XXXSpec
 	Extensions map[string]interface{} `yaml:",inline"`
 }
 
@@ -107,5 +109,21 @@ type ArgSpec struct {
 // Per-run workdir can be set via run.workdir (does not persist after the run).
 type WorkdirSpec struct {
 	Path       string                 `yaml:"path"`
+	Extensions map[string]interface{} `yaml:",inline"`
+}
+
+// LabelSpec sets OCI image config labels (the equivalent of Dockerfile LABEL).
+type LabelSpec struct {
+	Vars       map[string]string      `yaml:"vars,omitempty"`
+	Extensions map[string]interface{} `yaml:",inline"`
+}
+
+// EntrypointSpec sets the image config entrypoint (Dockerfile ENTRYPOINT).
+// Uses the same invocation fields as RunSpec (command / inline / script) but
+// emits image metadata rather than an llb exec.
+type EntrypointSpec struct {
+	Command string `yaml:"command,omitempty"` // exec-form argv (shlex-split; no /bin/sh -c)
+	Inline  string `yaml:"inline,omitempty"`  // shell-form entrypoint
+	Script  string `yaml:"script,omitempty"`  // not supported in v1alpha1 (run-only feature)
 	Extensions map[string]interface{} `yaml:",inline"`
 }
