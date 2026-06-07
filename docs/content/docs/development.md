@@ -53,7 +53,7 @@ make docs-mod    # update Hugo Book theme module (docs/go.mod)
 The site uses the [Hugo Book](https://github.com/alex-shpak/hugo-book) theme (v0.14.0), installed as a git submodule at `docs/themes/hugo-book` and tracked in `docs/go.mod` via Hugo Modules.
 
 - Edit pages under `docs/content/docs/` (the Book sidebar is built from this section).
-- The landing page is `docs/content/_index.md` (`layout: landing`, hidden from the sidebar).
+- The home page is `docs/content/_index.md` (uses the standard Book layout with sidebar and optional right-rail ToC).
 - Front matter `title:` + `weight:` controls sidebar order. Book-specific params include `bookToC`, `bookHidden`, and `bookCollapseSection`.
 - Internal links: use the `relref` shortcode with paths under `/docs/...` (e.g. `[text]({{</* relref "/docs/getting-started" */>}}))` so they resolve correctly under the GitHub Pages sub-path (`/Yamlfile/`).
 - Moved pages include `aliases:` for old URLs (e.g. `/getting-started/` → `/docs/getting-started/`).

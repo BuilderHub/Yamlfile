@@ -1,7 +1,6 @@
 ---
 title: "Yamlfile"
-layout: landing
-bookHidden: true
+bookToC: true
 ---
 
 **BuildKit frontend** for intuitive, declarative, parallel, multi-file, secret-aware builds that are easier to reason about than large Dockerfiles.
