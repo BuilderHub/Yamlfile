@@ -1,6 +1,8 @@
 ---
 title: "Development"
 weight: 70
+aliases:
+  - /development/
 ---
 
 ## Prerequisites
@@ -11,10 +13,12 @@ weight: 70
 ## Setup
 
 ```bash
-git clone https://github.com/BuilderHub/Yamlfile.git
+git clone --recurse-submodules https://github.com/BuilderHub/Yamlfile.git
 cd Yamlfile
 nix develop
 ```
+
+If you already cloned without submodules: `git submodule update --init --recursive`.
 
 ## Common commands
 
@@ -43,14 +47,18 @@ When supplying secrets in CI builds (e.g. registry tokens), use the same `--secr
 ```bash
 make docs        # build to docs/public (used by the GitHub Pages deploy)
 make docs-serve  # live reload at http://localhost:1313
+make docs-mod    # update Hugo Book theme module (docs/go.mod)
 ```
 
-- Edit files under `docs/content/`.
-- Frontmatter `title:` + `weight:` controls ordering in the sidebar toctree and section lists.
-- Internal links: use the `relref` shortcode (e.g. `[text]({{</* relref "/getting-started" */>}})) so they resolve correctly under the `baseURL` sub-path (e.g. `/Yamlfile/`).
+The site uses the [Hugo Book](https://github.com/alex-shpak/hugo-book) theme (v0.14.0), installed as a git submodule at `docs/themes/hugo-book` and tracked in `docs/go.mod` via Hugo Modules.
+
+- Edit pages under `docs/content/docs/` (the Book sidebar is built from this section).
+- The home page is `docs/content/_index.md` (uses the standard Book layout with sidebar and optional right-rail ToC).
+- Front matter `title:` + `weight:` controls sidebar order. Book-specific params include `bookToC`, `bookHidden`, and `bookCollapseSection`.
+- Internal links: use the `relref` shortcode with paths under `/docs/...` (e.g. `[text]({{</* relref "/docs/getting-started" */>}}))` so they resolve correctly under the GitHub Pages sub-path (`/Yamlfile/`).
+- Moved pages include `aliases:` for old URLs (e.g. `/getting-started/` → `/docs/getting-started/`).
+- Search, dark/light mode, and right-rail table of contents are provided by the Book theme (`BookSearch`, `BookTheme`, `BookToC` in `docs/hugo.toml`).
 - Run `make docs` (or the CI check) before pushing; it must succeed with no errors.
-- Navigation: a persistent sidebar toctree (`docs/layouts/partials/toctree.html`) replaces the old per-page "On this page" heading TOC. Search uses a Hugo-generated `search-index.json` plus client-side Fuse.js (`docs/static/js/`).
-- The site is intentionally lightweight (custom layouts + a few partials + small CSS). A full theme (e.g. via Hugo modules) can be adopted later.
 
 ## How docs deployment works
 
@@ -73,4 +81,4 @@ make docs-serve  # live reload at http://localhost:1313
 4. `make docs` (if you touched content or the v1alpha1 types — this also regenerates the JSON Schema).
 5. Open PR against `main`.
 
-All changes to the v1alpha1 surface should be reflected in `docs/content/syntax-reference.md` and usually a short note or example under `docs/content/features/`.
+All changes to the v1alpha1 surface should be reflected in `docs/content/docs/syntax-reference.md` and usually a short note or example under `docs/content/docs/features/`.

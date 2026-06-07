@@ -1,6 +1,9 @@
 ---
 title: "Syntax Reference"
 weight: 20
+bookToC: true
+aliases:
+  - /syntax-reference/
 ---
 
 This page is the authoritative reference for the structure understood by the `Yamlfile` BuildKit frontend.
@@ -10,7 +13,7 @@ This page is the authoritative reference for the structure understood by the `Ya
 > - `defaults.platform` and per-target `platform:` — accepted by the parser but ignored (the frontend follows the platform(s) requested via the BuildKit client / `--platform`).
 > - Full independent parallel execution inside one build request — the graph helpers (`parallelRoots`, reachable ordering) exist and are tested; the actual ToLLB path is intentionally serial for determinism ("For MVP we build serially in reachable order").
 >
-> See [Development]({{< relref "/development" >}}) for current implementation scope and source layout. Multi-file and platform support are high priority for the next iteration.
+> See [Development]({{< relref "/docs/development" >}}) for current implementation scope and source layout. Multi-file and platform support are high priority for the next iteration.
 
 ## Top Level
 
@@ -211,7 +214,7 @@ Each entry in a `run.secrets` list supports:
 
 Use either `target:` (file form) or `env:` (env form), not both on the same entry.
 
-See [Features / Secrets]({{< relref "/features/secrets" >}}) for supply examples (`--secret id=...,env=...` or `src=...`) and the exact option semantics.
+See [Features / Secrets]({{< relref "/docs/features/secrets" >}}) for supply examples (`--secret id=...,env=...` or `src=...`) and the exact option semantics.
 
 
 ## Multi-file / Orchestration (`builds:`) — grammar only (not yet implemented)

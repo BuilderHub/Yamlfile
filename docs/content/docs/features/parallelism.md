@@ -1,6 +1,8 @@
 ---
 title: "Parallelism & Dependency Graphs"
 weight: 30
+aliases:
+  - /features/parallelism/
 ---
 
 When you define multiple top-level `targets` that do not depend on each other (no `from:` or `copy.from:` chain between them), the frontend can (and does) prepare them without artificial serialization.
@@ -15,4 +17,4 @@ Today the build within a single requested target is still largely serial (for si
 
 Future iterations may add explicit concurrent execution of independent roots inside one build request.
 
-See the "MVP status" note in the [Syntax Reference]({{< relref "/syntax-reference" >}}) for the current serial execution reality inside a single requested target (the graph prep is honest; the ToLLB path is intentionally serial today).
+See the "MVP status" note in the [Syntax Reference]({{< relref "/docs/syntax-reference" >}}) for the current serial execution reality inside a single requested target (the graph prep is honest; the ToLLB path is intentionally serial today).

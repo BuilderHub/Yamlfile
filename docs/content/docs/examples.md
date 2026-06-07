@@ -1,6 +1,8 @@
 ---
 title: "Examples"
 weight: 50
+aliases:
+  - /examples/
 ---
 
 
@@ -72,7 +74,7 @@ docker buildx build -f examples/multi-target.Yamlfile \
   .
 ```
 
-See the [Syntax Reference]({{< relref "/syntax-reference" >}}) for the grammar and [Features]({{< relref "/features" >}}) for deep dives into `run.script` and secrets.
+See the [Syntax Reference]({{< relref "/docs/syntax-reference" >}}) for the grammar and [Features]({{< relref "/docs/features" >}}) for deep dives into `run.script` and secrets.
 
 ## Build args, variable expansion, and workdir
 

@@ -1,6 +1,8 @@
 ---
 title: "Why Yamlfile instead of a plain Dockerfile?"
 weight: 60
+aliases:
+  - /vs-dockerfile/
 ---
 
 
@@ -23,4 +25,4 @@ Yamlfile makes the **graph explicit**:
 
 You still get the full power of BuildKit (caching, multi-platform, provenance, etc.) because Yamlfile is "just" another frontend that emits LLB.
 
-See the [Syntax Reference]({{< relref "/syntax-reference" >}}) for how targets, dependencies, and steps are declared.
+See the [Syntax Reference]({{< relref "/docs/syntax-reference" >}}) for how targets, dependencies, and steps are declared.

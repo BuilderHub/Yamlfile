@@ -1,6 +1,6 @@
 ---
 title: "Yamlfile"
-weight: 1
+bookToC: true
 ---
 
 **BuildKit frontend** for intuitive, declarative, parallel, multi-file, secret-aware builds that are easier to reason about than large Dockerfiles.
@@ -17,7 +17,7 @@ docker buildx build \
   .
 ```
 
-See the [Getting Started]({{< relref "/getting-started" >}}) page and the [Syntax Reference]({{< relref "/syntax-reference" >}}) for details.
+See the [Getting Started]({{< relref "/docs/getting-started" >}}) page and the [Syntax Reference]({{< relref "/docs/syntax-reference" >}}) for details.
 
 ## Key Features
 
@@ -33,15 +33,15 @@ See the [Getting Started]({{< relref "/getting-started" >}}) page and the [Synta
 
 Traditional multi-stage Dockerfiles become hard to reason about once you have 10–50 stages, lots of independent downloaders, shared scripts, and secret mounts. Yamlfile makes the graph, the parallelism, the script injection, and the secret mounting first-class and declarative.
 
-Full motivation and comparison: [vs. Dockerfile]({{< relref "/vs-dockerfile" >}}).
+Full motivation and comparison: [vs. Dockerfile]({{< relref "/docs/vs-dockerfile" >}}).
 
 ## Documentation Sections
 
-- [Getting Started]({{< relref "/getting-started" >}})
-- [Syntax Reference]({{< relref "/syntax-reference" >}})
-- [Features]({{< relref "/features" >}}) (scripts, secrets, copy, parallelism; multi-file planned)
-- [Examples]({{< relref "/examples" >}})
-- [Development]({{< relref "/development" >}}) (for contributors)
+- [Getting Started]({{< relref "/docs/getting-started" >}})
+- [Syntax Reference]({{< relref "/docs/syntax-reference" >}})
+- [Features]({{< relref "/docs/features" >}}) (scripts, secrets, copy, parallelism; multi-file planned)
+- [Examples]({{< relref "/docs/examples" >}})
+- [Development]({{< relref "/docs/development" >}}) (for contributors)
 
 ## License
 

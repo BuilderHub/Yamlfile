@@ -1,37 +1,38 @@
 baseURL = 'https://builderhub.github.io/Yamlfile/'
-locale = 'en-us'
+languageCode = 'en-us'
 title = 'Yamlfile'
+theme = 'hugo-book'
 
-# Enable useful features for technical docs
+disablePathToLower = true
 enableGitInfo = true
-pygmentsCodeFences = true
-pygmentsStyle = 'monokai'
-
 disableKinds = ["taxonomy", "term"]
+
+[module]
+[[module.imports]]
+  path = 'github.com/alex-shpak/hugo-book'
 
 [params]
   description = 'BuildKit frontend for intuitive, declarative, parallel, multi-file, secret-aware builds.'
   author = 'BuilderHub'
-  # Useful for "edit this page" links if we add partials later
-  github_repo = 'https://github.com/BuilderHub/Yamlfile'
-  github_branch = 'main'
+  BookTheme = 'auto'
+  BookSearch = true
+  BookToC = true
+  BookSection = 'docs'
+  BookRepo = 'https://github.com/BuilderHub/Yamlfile'
+  BookEditLink = '{{ .Site.Params.BookRepo }}/edit/main/docs/{{ .Path }}'
+  BookLastChangeLink = '{{ .Site.Params.BookRepo }}/commit/{{ .GitInfo.Hash }}'
+
+[[menu.after]]
+  name = 'GitHub'
+  url = 'https://github.com/BuilderHub/Yamlfile'
+  weight = 10
 
 [markup]
   [markup.goldmark]
     [markup.goldmark.renderer]
-      unsafe = true  # allow raw HTML in markdown if needed for examples
+      unsafe = true
   [markup.tableOfContents]
     startLevel = 2
     endLevel = 3
-
-[outputFormats]
-  [outputFormats.SearchIndex]
-    mediaType = "application/json"
-    baseName = "search-index"
-    isPlainText = true
-    notAlternative = true
-
-[outputs]
-  home = ["HTML", "RSS", "SearchIndex"]
-  section = ["HTML", "RSS"]
-  page = ["HTML"]
+  [markup.highlight]
+    style = 'monokai'
