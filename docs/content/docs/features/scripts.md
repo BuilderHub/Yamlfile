@@ -1,6 +1,8 @@
 ---
 title: "run.script — Baked-in Script Execution"
 weight: 10
+aliases:
+  - /features/scripts/
 ---
 
 
@@ -45,4 +47,4 @@ Yamlfile:
 
 Cleaner, and the frontend guarantees the temporary mount semantics.
 
-See also: [Secrets]({{< relref "/features/secrets" >}}) (often used together with scripts that need credentials).
+See also: [Secrets]({{< relref "/docs/features/secrets" >}}) (often used together with scripts that need credentials).

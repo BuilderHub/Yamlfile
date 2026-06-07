@@ -30,6 +30,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0  # for Hugo gitInfo / lastmod
+          submodules: recursive
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@v22

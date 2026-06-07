@@ -1,6 +1,8 @@
 ---
 title: "Secrets (file and env forms)"
 weight: 20
+aliases:
+  - /features/secrets/
 ---
 
 
@@ -35,6 +37,6 @@ docker buildx build ... \
   --secret id=netrc,src=$HOME/.netrc-for-build
 ```
 
-See the [Syntax Reference]({{< relref "/syntax-reference#secrets-secretmount" >}}) for the full `SecretMount` options (`optional`, `mode`, `uid`, `gid`).
+See the [Syntax Reference]({{< relref "/docs/syntax-reference#secrets-secretmount" >}}) for the full `SecretMount` options (`optional`, `mode`, `uid`, `gid`).
 
 Secrets are **never** present in the final image layers or history when used correctly.

@@ -36,6 +36,9 @@ generate-schema: ## Generate docs/static/schema/v1alpha1.json from the live Go t
 docs: generate-schema ## Build Hugo documentation site (output: docs/public). The schema is always regenerated first.
 	hugo -s $(DOCS_DIR) --gc --minify
 
+docs-mod: ## Update Hugo Book theme module dependencies
+	hugo mod get -u -s $(DOCS_DIR)
+
 docs-serve: ## Serve Hugo docs locally with live reload (http://localhost:1313)
 	hugo server -s $(DOCS_DIR) -D --disableFastRender --noHTTPCache --baseURL http://localhost:1313/
 

@@ -1,9 +1,0 @@
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{ if .IsHome }}{{ .Site.Title }}{{ else }}{{ .Title }} | {{ .Site.Title }}{{ end }}</title>
-<meta name="description" content="{{ .Site.Params.description }}">
-<link rel="stylesheet" href="{{ .Site.BaseURL }}css/main.css">
-{{ if .Site.Params.github_repo }}
-<link rel="canonical" href="{{ .Site.Params.github_repo }}">
-{{ end }}
-{{- with .Site.Params.author }}<meta name="author" content="{{ . }}">{{ end -}}

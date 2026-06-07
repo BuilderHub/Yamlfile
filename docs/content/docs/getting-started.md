@@ -1,6 +1,8 @@
 ---
 title: "Getting Started"
 weight: 10
+aliases:
+  - /getting-started/
 ---
 
 
@@ -48,7 +50,7 @@ To use a custom frontend image instead of the published one, pass `--build-arg B
 
 ## Build from source
 
-To build the frontend from source or run project CI locally, see [Development]({{< relref "/development" >}}).
+To build the frontend from source or run project CI locally, see [Development]({{< relref "/docs/development" >}}).
 
 ## Supplying Secrets
 
@@ -76,10 +78,10 @@ docker buildx build ... \
   --secret id=netrc,src=$HOME/.netrc
 ```
 
-See the [Secrets]({{< relref "/features/secrets" >}}) page for details on file vs. env forms and options (`optional`, `mode`, `uid`, `gid`).
+See the [Secrets]({{< relref "/docs/features/secrets" >}}) page for details on file vs. env forms and options (`optional`, `mode`, `uid`, `gid`).
 
 ## Next Steps
 
-- Read the [Syntax Reference]({{< relref "/syntax-reference" >}}) for the full grammar.
-- Look at [Examples]({{< relref "/examples" >}}).
-- See [Development]({{< relref "/development" >}}) for implementation details and contributor setup.
+- Read the [Syntax Reference]({{< relref "/docs/syntax-reference" >}}) for the full grammar.
+- Look at [Examples]({{< relref "/docs/examples" >}}).
+- See [Development]({{< relref "/docs/development" >}}) for implementation details and contributor setup.
