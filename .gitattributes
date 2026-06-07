@@ -1,0 +1,5 @@
+# Yamlfile build definitions are YAML-shaped; force GitHub Linguist to highlight them as YAML
+# until a dedicated "Yamlfile" language is accepted in github/linguist.
+*.Yamlfile linguist-language=YAML
+**/Yamlfile linguist-language=YAML
+
