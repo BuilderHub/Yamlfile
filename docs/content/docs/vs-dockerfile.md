@@ -18,11 +18,11 @@ Traditional multi-stage Dockerfiles are extremely powerful but become difficult 
 Yamlfile makes the **graph explicit**:
 
 - `targets` are named first-class citizens.
-- `from:` and `copy.from:` (sibling targets today; the `component:target` form for multi-file is in the grammar and graph for future use) declare dependencies.
-- The frontend computes reachable targets for a given `--target`, detects cycles, and only builds what is needed.
-- `run.script` is a first-class concept (the frontend does the temporary mount for you).
+- `from:` and `copy.from:` (sibling targets today; the `component:target` form for multi-file references is accepted but not yet supported at runtime) declare dependencies.
+- Only the targets you actually need are built.
+- `run.script` lets you run a script from your build context without leaving a copy of it in the final image.
 - Secrets have a clean declarative form that maps directly to `type=secret` (file or `env=`).
 
-You still get the full power of BuildKit (caching, multi-platform, provenance, etc.) because Yamlfile is "just" another frontend that emits LLB.
+You still get the full power of BuildKit (caching, multi-platform, provenance, etc.).
 
 See the [Syntax Reference]({{< relref "/docs/syntax-reference" >}}) for how targets, dependencies, and steps are declared.

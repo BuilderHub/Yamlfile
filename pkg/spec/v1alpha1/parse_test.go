@@ -146,6 +146,21 @@ targets:
 	}
 }
 
+func TestLoad_RejectsEntrypointScript(t *testing.T) {
+	_, err := Load([]byte(`
+apiVersion: v1alpha1
+targets:
+  t:
+    from: scratch
+    steps:
+      - entrypoint:
+          script: ./entry.sh
+`))
+	if err == nil || !contains(err.Error(), "script is not supported in v1alpha1") {
+		t.Errorf("expected script-not-supported error for entrypoint, got %v", err)
+	}
+}
+
 func TestLoad_RejectsMixedStepKinds(t *testing.T) {
 	_, err := Load([]byte(`
 apiVersion: v1alpha1

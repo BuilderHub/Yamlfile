@@ -2,51 +2,60 @@ package convert
 
 import (
 	"fmt"
+	"strings"
 
 	spec "github.com/builderhub/yamlfile/pkg/spec/v1alpha1"
 )
 
 // buildDependencyGraph returns for each target the list of targets it directly depends on
 // (from "from:" and any step that has a "from" reference like copy.from).
+// Cross-file "comp:target" refs (via builds:) are intentionally *not* included here;
+// they are external and resolved (or errored) at ToLLB time.
 func buildDependencyGraph(y *spec.Yamlfile) (map[string][]string, error) {
 	deps := make(map[string][]string, len(y.Targets))
 	for name, t := range y.Targets {
-		d := collectDirectDeps(t, y.Targets)
-		// also handle builds: refs at top level? resolved at use time
+		d := collectDirectDeps(t, y.Targets, y.Builds)
 		deps[name] = d
 	}
 	return deps, nil
 }
 
 // resolveBase classifies a "from:" / "copy.from" value.
-// If it exactly names a target defined in this Yamlfile, it is a sibling target
-// (return true + the key). Otherwise it is treated as an image ref for llb.Image
-// (this allows both bare names like "alpine" and fully qualified images).
-// Multi-file "build:target" refs are left for higher-level handling (they won't
-// match a local target key).
-func resolveBase(ref string, targets map[string]spec.TargetSpec) (isTarget bool, keyOrRef string) {
+// - Local sibling target (exact key in targets, and target names forbid ":") => isLocalTarget=true
+// - "comp:target" where "comp" is a key in the builds: map => isCrossBuild=true (caller must treat as external)
+// - Everything else (bare name, "reg:tag", "alpine", "scratch") => image ref (or special)
+// Target names are validated to contain no ":" so a ref containing ":" is either image or cross-build.
+func resolveBase(ref string, targets map[string]spec.TargetSpec, builds map[string]spec.BuildRef) (isLocalTarget, isCrossBuild bool, keyOrRef string) {
 	if ref == "" {
-		return false, ""
+		return false, false, ""
 	}
 	if ref == "scratch" {
-		return false, "scratch"
+		return false, false, "scratch"
 	}
 	if _, ok := targets[ref]; ok {
-		return true, ref
+		return true, false, ref
 	}
-	return false, ref
+	if idx := strings.Index(ref, ":"); idx > 0 && idx < len(ref)-1 {
+		comp := ref[:idx]
+		if builds != nil {
+			if _, ok := builds[comp]; ok {
+				return false, true, ref
+			}
+		}
+	}
+	return false, false, ref
 }
 
-func collectDirectDeps(t spec.TargetSpec, targets map[string]spec.TargetSpec) []string {
+func collectDirectDeps(t spec.TargetSpec, targets map[string]spec.TargetSpec, builds map[string]spec.BuildRef) []string {
 	var out []string
 	if t.From != "" {
-		if isT, k := resolveBase(t.From, targets); isT {
+		if isT, _, k := resolveBase(t.From, targets, builds); isT {
 			out = append(out, k)
 		}
 	}
 	for _, s := range t.Steps {
 		if s.Copy != nil && s.Copy.From != "" {
-			if isT, k := resolveBase(s.Copy.From, targets); isT {
+			if isT, _, k := resolveBase(s.Copy.From, targets, builds); isT {
 				out = append(out, k)
 			}
 		}
@@ -87,7 +96,10 @@ func reachableTargets(y *spec.Yamlfile, target string, deps map[string][]string)
 		visited[n] = true
 		for _, d := range deps[n] {
 			if _, ok := y.Targets[d]; !ok {
-				// might be "comp:foo" multi-file ref; allow for now (resolved higher)
+				// d is not a local sibling target (it is either a cross-file "comp:target"
+				// reference declared via builds: or an external image ref). Cross-file refs
+				// are intentionally never added to the local dep graph (see collectDirectDeps)
+				// and produce clear errors later in ToLLB when encountered on reachable targets.
 				continue
 			}
 			if err := dfs(d); err != nil {

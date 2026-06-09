@@ -70,7 +70,8 @@ func Build(ctx context.Context, c gwclient.Client) (*gwclient.Result, error) {
 		return nil, err
 	}
 
-	// Attach image config for the chosen target (single-plat MVP)
+	// Attach image config for the chosen target (single-plat per chosen target for now;
+	// per-target platform: from grammar is applied inside convert.ToLLB and reflected here).
 	if r.Image != nil {
 		dt, err := json.Marshal(r.Image)
 		if err != nil {

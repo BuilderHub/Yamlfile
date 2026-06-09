@@ -74,7 +74,7 @@ docker buildx build -f examples/multi-target.Yamlfile \
   .
 ```
 
-See the [Syntax Reference]({{< relref "/docs/syntax-reference" >}}) for the grammar and [Features]({{< relref "/docs/features" >}}) for deep dives into `run.script` and secrets.
+See the [Syntax Reference]({{< relref "/docs/syntax-reference" >}}) for the full syntax and [Features]({{< relref "/docs/features" >}}) for deep dives into `run.script` and secrets.
 
 ## Build args, variable expansion, and workdir
 
@@ -106,5 +106,5 @@ Build with an override:
 docker buildx build ... --build-arg VERSION=1.2.3 ...
 ```
 
-More examples will be added in future releases (multi-file orchestration, explicit platform handling, and intra-build parallel execution are on the roadmap).
+More examples will be added in future releases (full multi-file orchestration and explicit multi-platform handling are on the roadmap).
 

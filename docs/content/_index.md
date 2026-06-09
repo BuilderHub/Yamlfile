@@ -22,12 +22,12 @@ See the [Getting Started]({{< relref "/docs/getting-started" >}}) page and the [
 ## Key Features
 
 - Explicit `targets` (named stages) with `from:` (image or sibling target) → clear dependency graph.
-- `run.script: path` — the frontend securely loads the script from your build context and mounts it at runtime (no `COPY` layer left in the image).
+- `run.script: path` — Yamlfile securely loads the script from your build context and mounts it at runtime (no `COPY` layer left in the image).
 - `run.inline` / `command` for embedded shell logic.
 - Secure secrets: per-run `secrets: [{id, target: /path (file) or env: VAR (env var)}]`.
-- Natural parallelism when independent targets have no data dependencies (graph prep + helpers exist; execution within one request is serial today for determinism).
-- `apiVersion` + inline extensions for forward-compatible evolution.
-- (Planned) Multi-file orchestration via `builds:` + `component:target` cross-copy (grammar + graph support present; runtime loading not yet wired).
+- Natural parallelism for independent targets. Targets with no dependency relationship between them are not forced into sequential order.
+- `apiVersion` + inline extensions so you can use additional fields without breaking your files.
+- Multi-file orchestration via `builds:` + `component:target` cross-copy (you can write the syntax today, but cross-file builds are not yet supported at runtime).
 
 ## Why Yamlfile instead of (just) a Dockerfile?
 
@@ -39,7 +39,13 @@ Full motivation and comparison: [vs. Dockerfile]({{< relref "/docs/vs-dockerfile
 
 - [Getting Started]({{< relref "/docs/getting-started" >}})
 - [Syntax Reference]({{< relref "/docs/syntax-reference" >}})
-- [Features]({{< relref "/docs/features" >}}) (scripts, secrets, copy, parallelism; multi-file planned)
+- [Features]({{< relref "/docs/features" >}})
+  - Scripts (`run.script`)
+  - Secrets (per-run file + env forms)
+  - Copy (context + sibling targets)
+  - Parallelism & graphs
+  - Platforms (`defaults.platform` + per-target)
+  - Multi-file (syntax supported, but runtime loading not yet available)
 - [Examples]({{< relref "/docs/examples" >}})
 - [Development]({{< relref "/docs/development" >}}) (for contributors)
 

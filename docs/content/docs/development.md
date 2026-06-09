@@ -69,7 +69,7 @@ The site uses the [Hugo Book](https://github.com/alex-shpak/hugo-book) theme (v0
 ## Code layout (relevant to docs)
 
 - `pkg/spec/v1alpha1/` — the types + parser (update syntax-reference.md when changing surface). The JSON Schema under `docs/static/schema/` is generated from these types.
-- `pkg/convert/` — graph + LLB emission (the source of truth for parallelism helpers, script mounting, secret handling, variable expansion, and the current same-file target/copy implementation; multi-file loading is future work).
+- `pkg/convert/` — graph + LLB emission (the source of truth for parallelism helpers, script mounting, secret handling, variable expansion, platform selection, same-file target/copy, and cross-file ref recognition with clear errors; full multi-file loading/wiring is future work).
 - `cmd/yamlfile-frontend/` — the BuildKit gateway entrypoint, Dockerfile (release builds), and Yamlfile (dogfooded image build; `make docker-build-from-yamlfile`).
 - `hack/gen-schema/` — the (stdlib-only) generator that produces `docs/static/schema/v1alpha1.json` from the live Go types. It is invoked automatically by `make docs`.
 

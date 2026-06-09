@@ -569,9 +569,6 @@
           "additionalProperties": {},
           "type": "object"
         },
-        "kind": {
-          "type": "string"
-        },
         "secrets": {
           "additionalProperties": {
             "type": "string"

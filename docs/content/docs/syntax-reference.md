@@ -8,18 +8,18 @@ aliases:
 
 This page is the authoritative reference for the structure understood by the `Yamlfile` BuildKit frontend.
 
-> **MVP status**: The grammar, parser, and graph are forward-compatible (unknown fields are retained via extensions). However, not everything declared in the grammar is fully wired in the current frontend:
-> - `builds:` + `component:target` cross-file orchestration — parsed and graphed but loading/resolution is not yet implemented (only same-file sibling `from:` / `copy.from:` work today).
-> - `defaults.platform` and per-target `platform:` — accepted by the parser but ignored (the frontend follows the platform(s) requested via the BuildKit client / `--platform`).
-> - Full independent parallel execution inside one build request — the graph helpers (`parallelRoots`, reachable ordering) exist and are tested; the actual ToLLB path is intentionally serial for determinism ("For MVP we build serially in reachable order").
+> **Status**: The format is designed to be forward-compatible (unknown fields are retained via extensions). Most of the documented features work when you build with Yamlfile:
 >
-> See [Development]({{< relref "/docs/development" >}}) for current implementation scope and source layout. Multi-file and platform support are high priority for the next iteration.
+> - [x] `defaults.platform` and per-target `platform:` are honored (target.platform > defaults.platform > client `--platform` / dockerui). See the Platform section below.
+> - [ ] `builds:` + `component:target` cross-file refs — you can write the syntax, and it will give you a clear error if you try to use it. Actually loading and using targets from other Yamlfiles is not yet supported.
+> - [x] Dependency graphs (including cycle detection) are fully supported. Independent targets are not artificially serialized. See [Parallelism & Graphs]({{< relref "/docs/features/parallelism" >}}) for details.
+>
+> See [Development]({{< relref "/docs/development" >}}) for scope. Multi-file runtime remains the main pending item.
 
 ## Top Level
 
 ```yaml
 apiVersion: v1alpha1
-kind: Yamlfile                 # optional
 
 defaults:
   platform: linux/amd64
@@ -45,11 +45,19 @@ my-target:
 ```
 
 - `from` can refer to a previously-defined target in the same file (sibling) or a named build from the `builds:` section (for multi-file).
-- Targets are built in dependency order (the frontend computes a reachable graph from the requested `--target` or a default).
+- Targets are built in the order required by their dependencies. Only targets needed for the one you requested (via `--target` or a default) will be built.
 
 ## Step (discriminated union)
 
-A step has exactly one of `run`, `copy`, `env`, `arg`, `workdir`, `label`, or `entrypoint`.
+A step must specify exactly one of the following (and only one):
+
+- `run`
+- `copy`
+- `env`
+- `arg`
+- `workdir`
+- `label`
+- `entrypoint`
 
 > **Variable expansion**: Values inside `env.vars`, `arg.vars`, `label.vars`, `workdir.path` (standalone or `run.workdir`), and `run.env` support `$VAR` and `${VAR}` references. These are expanded using BuildKit's shell lexer against CLI `--build-arg` values, `arg:` declarations (with defaults), and any `env:` / `run.env` values set earlier in the same target. Sibling `from:` targets inherit their final `ENV` values for expansion. `from:`, `copy.from`, `script:`, and the bodies of `command`/`inline` are left literal (shell handles `$` inside commands at runtime).
 
@@ -66,7 +74,7 @@ A machine-readable [JSON Schema](https://builderhub.github.io/Yamlfile/schema/v1
       go mod download
       go build ...
     # or (the "baked-in" feature)
-    script: ./scripts/build.sh   # loaded by the frontend and mounted read-only; no COPY needed in the image
+    script: ./scripts/build.sh   # loaded by Yamlfile and mounted read-only; no COPY needed in the image
 
     env:
       CGO_ENABLED: "0"
@@ -85,7 +93,7 @@ A machine-readable [JSON Schema](https://builderhub.github.io/Yamlfile/schema/v1
 
 **Quoting tip (common gotcha)**: If your `command:` value contains `key: value` (or looks like a YAML map), quote it or use `inline:` / `script:`. Unquoted `go build -o /out/app .` is fine, but `command: echo foo: bar > /x` can be misparsed by YAML as a map. Prefer double quotes or the `|` block form for safety.
 
-- `script` paths are resolved relative to the build context. The frontend loads the content (via a restricted local source) and makes it available inside the `RUN` via a temporary scratch mount. The script does **not** end up as a layer in the final image unless you explicitly copy it.
+- `script` paths are resolved relative to the build context. Yamlfile loads the content (using a restricted source) and makes it available inside the `RUN` via a temporary scratch mount. The script does **not** end up as a layer in the final image unless you explicitly copy it.
 - Secrets are passed using BuildKit's native `--mount=type=secret` mechanism. They are never present in image layers or history.
 - `workdir` sets the working directory only for this `RUN` (equivalent to `RUN --workdir=...` or `cd` inside the command). It does not affect subsequent steps or the final image `WORKDIR`. Use the top-level `workdir:` step (below) if you want a persistent change.
 
@@ -157,7 +165,13 @@ Sets OCI image config labels (the equivalent of Dockerfile `LABEL`). Values supp
 
 ### entrypoint
 
-Sets the image config entrypoint (Dockerfile `ENTRYPOINT`). Uses the same invocation fields as `run` (`command`, `inline`, or `script`) but emits image metadata rather than executing a build step.
+Sets the image config entrypoint (Dockerfile `ENTRYPOINT`). It accepts the same invocation fields as a `run` step:
+
+- `command`
+- `inline`
+- `script` (not supported for `entrypoint`)
+
+The step emits image metadata rather than executing a build step.
 
 ```yaml
 - entrypoint:
@@ -217,9 +231,9 @@ Use either `target:` (file form) or `env:` (env form), not both on the same entr
 See [Features / Secrets]({{< relref "/docs/features/secrets" >}}) for supply examples (`--secret id=...,env=...` or `src=...`) and the exact option semantics.
 
 
-## Multi-file / Orchestration (`builds:`) — grammar only (not yet implemented)
+## Multi-file / Orchestration (`builds:`) — not yet supported at runtime
 
-The grammar and dependency graph prep support declaring other Yamlfiles:
+You can declare other Yamlfiles using the `builds:` section (and refer to them using `component:target` syntax). However, this is not yet supported at runtime:
 
 ```yaml
 builds:
@@ -237,14 +251,14 @@ targets:
           dest: "/torch"
 ```
 
-**Current status**: `builds:` entries and the `component:target` form are parsed and appear in the graph for forward compatibility and tooling, but the frontend does **not** yet load external Yamlfiles or wire cross-file state. Only same-file sibling targets (via `from:` or `copy.from:` using a bare target name) are resolved today.
+**Current status**: You can write `builds:` sections and use `component:target` references today. If you actually use a cross-file reference for a target that gets built, you will get a clear error. Full support for loading other Yamlfiles and using their targets is not yet implemented.
 
-For now, keep everything in one Yamlfile using multiple named targets + sibling references. Full multi-file support (loading, caching, cross-copy) is planned for the next release.
+For now, keep everything in one Yamlfile using multiple named targets + sibling references. Full multi-file support (loading, caching, cross-copy) is planned.
 
-See the MVP note at the top of this page.
+See the status box at the top of this page for current limitations.
 
 
-## Platform & Defaults — parsed only (not yet applied)
+## Platform & Defaults
 
 ```yaml
 defaults:
@@ -256,9 +270,19 @@ targets:
     platform: linux/arm64   # overrides default for this target
 ```
 
-**Current status**: The fields exist in the types and survive parsing (for forward-compat and so that linters/docs tools can see the intent). However, the frontend does not yet read `defaults.platform` or per-target `platform:` — it always uses the platform(s) requested by the BuildKit client (e.g. `docker buildx build --platform linux/amd64,linux/arm64 ...` or the default of the builder).
+`platform:` values are of the form `os/arch[/variant]` (e.g. `linux/amd64`, `linux/arm64/v8`).
 
-See the MVP note at the top of the page.
+Precedence (highest first):
+- per-target `platform:`
+- document `defaults.platform`
+- the platform(s) requested by the BuildKit client (e.g. `docker buildx build --platform ...` or the builder default)
+
+When a target declares (or inherits via defaults) a platform:
+- Base images (`from:` that are not siblings or scratch) are resolved for that platform (`llb.Image(..., llb.Platform(...))`).
+- The exported image config for the target records that platform.
+- Sibling `from:` targets use the state produced by the depended-on target (which may have used a different platform); the child's own platform governs its subsequent layers and final config.
+
+Variable expansion and most other steps are platform-agnostic. Building a single target for multiple platforms at once is not yet supported.
 
 ## Extensibility
 
