@@ -150,6 +150,54 @@ func TestToLLB_LabelEntrypoint_Basic(t *testing.T) {
 	}
 }
 
+// TestToLLB_EntrypointScript verifies that entrypoint.script bakes the script
+// content into the image (unlike run.script) and sets the entrypoint accordingly.
+func TestToLLB_EntrypointScript(t *testing.T) {
+	scriptContent := []byte("#!/bin/sh\necho hello from entrypoint script\nexec \"$@\"\n")
+
+	y := &spec.Yamlfile{
+		APIVersion: "v1alpha1",
+		Targets: map[string]spec.TargetSpec{
+			"app": {
+				From: "alpine",
+				Steps: []spec.Step{
+					{
+						Entrypoint: &spec.EntrypointSpec{
+							Script: "entrypoint.sh",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	opt := ConvertOpt{
+		Platform: &ocispecs.Platform{OS: "linux", Architecture: "amd64"},
+		ScriptLoader: func(path string) ([]byte, error) {
+			if path == "entrypoint.sh" {
+				return scriptContent, nil
+			}
+			return nil, nil
+		},
+	}
+
+	res, err := ToLLB(context.Background(), y, "app", opt)
+	if err != nil {
+		t.Fatalf("ToLLB: %v", err)
+	}
+	r, ok := res["app"]
+	if !ok {
+		t.Fatal("no result for app")
+	}
+	if r.Image == nil {
+		t.Fatal("no image config")
+	}
+	// Entrypoint should be set to the baked script path
+	if len(r.Image.Config.Entrypoint) != 1 || !strings.HasPrefix(r.Image.Config.Entrypoint[0], "/.yamlfile-entrypoint-") {
+		t.Errorf("unexpected entrypoint: %v", r.Image.Config.Entrypoint)
+	}
+}
+
 // TestToLLB_PlatformOverrides verifies that defaults.platform and per-target platform
 // (grammar fields) are wired: target.platform wins, then defaults, then opt fallback.
 // We assert on the resulting image config's Platform (the part that is exported).

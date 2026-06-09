@@ -82,6 +82,8 @@ func ToLLB(ctx context.Context, y *v1alpha1.Yamlfile, target string, opt Convert
 	// Scoped script preload: only load scripts referenced by *reachable* targets
 	// for the chosen target. This prevents a missing script in an unrelated target
 	// (common in multi-target Yamlfies) from failing the whole build.
+	// Scripts are collected for both run.script (ephemeral build mount) and
+	// entrypoint.script (baked into the final image).
 	scripts := map[string][]byte{}
 	if opt.ScriptLoader != nil {
 		for _, name := range reachable {
@@ -95,6 +97,17 @@ func ToLLB(ctx context.Context, y *v1alpha1.Yamlfile, target string, opt Convert
 					b, err := opt.ScriptLoader(p)
 					if err != nil {
 						return nil, fmt.Errorf("load script %s for run (target %s): %w", p, name, err)
+					}
+					scripts[p] = b
+				}
+				if stp.Entrypoint != nil && stp.Entrypoint.Script != "" {
+					p := stp.Entrypoint.Script
+					if _, ok := scripts[p]; ok {
+						continue
+					}
+					b, err := opt.ScriptLoader(p)
+					if err != nil {
+						return nil, fmt.Errorf("load script %s for entrypoint (target %s): %w", p, name, err)
 					}
 					scripts[p] = b
 				}
@@ -276,10 +289,21 @@ func ToLLB(ctx context.Context, y *v1alpha1.Yamlfile, target string, opt Convert
 				}
 			}
 			if step.Entrypoint != nil {
-				var err error
-				img, err = dispatchEntrypoint(img, step.Entrypoint, currentVars)
-				if err != nil {
-					return nil, fmt.Errorf("entrypoint in target %s: %w", name, err)
+				e := step.Entrypoint
+				if e.Script != "" {
+					content, has := opt.Scripts[e.Script]
+					if !has {
+						return nil, fmt.Errorf("entrypoint script %s not preloaded for target %s", e.Script, name)
+					}
+					scriptPath := "/.yamlfile-entrypoint-" + sanitize(e.Script)
+					st = st.File(llb.Mkfile(scriptPath, 0755, content))
+					img.Config.Entrypoint = []string{scriptPath}
+				} else {
+					var err error
+					img, err = dispatchEntrypoint(img, e, currentVars)
+					if err != nil {
+						return nil, fmt.Errorf("entrypoint in target %s: %w", name, err)
+					}
 				}
 			}
 		}
@@ -310,9 +334,6 @@ func dispatchLabel(img *ocispecs.Image, l *v1alpha1.LabelSpec, env map[string]st
 }
 
 func dispatchEntrypoint(img *ocispecs.Image, e *v1alpha1.EntrypointSpec, env map[string]string) (*ocispecs.Image, error) {
-	if e.Script != "" {
-		return img, fmt.Errorf("entrypoint does not support script in v1alpha1 (use command or inline)")
-	}
 	var args []string
 	if e.Command != "" {
 		expanded, err := expand(e.Command, env)

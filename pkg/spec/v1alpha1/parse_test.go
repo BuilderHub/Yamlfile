@@ -146,8 +146,8 @@ targets:
 	}
 }
 
-func TestLoad_RejectsEntrypointScript(t *testing.T) {
-	_, err := Load([]byte(`
+func TestLoad_AllowsEntrypointScript(t *testing.T) {
+	y, err := Load([]byte(`
 apiVersion: v1alpha1
 targets:
   t:
@@ -156,8 +156,15 @@ targets:
       - entrypoint:
           script: ./entry.sh
 `))
-	if err == nil || !contains(err.Error(), "script is not supported in v1alpha1") {
-		t.Errorf("expected script-not-supported error for entrypoint, got %v", err)
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	steps := y.Targets["t"].Steps
+	if len(steps) != 1 {
+		t.Fatalf("expected 1 step, got %d", len(steps))
+	}
+	if steps[0].Entrypoint == nil || steps[0].Entrypoint.Script != "./entry.sh" {
+		t.Errorf("expected entrypoint with script ./entry.sh, got %+v", steps[0].Entrypoint)
 	}
 }
 
