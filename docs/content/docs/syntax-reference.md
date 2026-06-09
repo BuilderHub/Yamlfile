@@ -169,7 +169,7 @@ Sets the image config entrypoint (Dockerfile `ENTRYPOINT`). It accepts the same 
 
 - `command`
 - `inline`
-- `script` (not supported for `entrypoint`)
+- `script`
 
 The step emits image metadata rather than executing a build step.
 
@@ -182,7 +182,9 @@ Semantics differ from `run` for `command`:
 
 - **`entrypoint.command`**: exec-form — the string is shlex-split into argv (maps to `ENTRYPOINT ["/bin/foo"]`). No `/bin/sh -c` wrapper.
 - **`entrypoint.inline`**: shell-form — prepends the image shell (e.g. `/bin/sh -c`), like Dockerfile shell `ENTRYPOINT`.
-- **`entrypoint.script`**: not supported yet (`script` is a build-time mount mechanism for `run` only).
+- **`entrypoint.script`**: the script content is loaded from the build context at build time and baked into the final image as an executable file (at a generated hidden path like `/.yamlfile-entrypoint-...`). The entrypoint is set to run it directly. Unlike `run.script` (which is a temporary build-time mount that does not persist in image layers), an entrypoint script *will* be present in the final image. This is a convenience over writing an explicit `copy` step for the script.
+
+If you need the script to receive CMD arguments in the usual way, your script should typically end with `exec "$@"`.
 
 ## Secrets
 

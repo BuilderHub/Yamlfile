@@ -119,11 +119,12 @@ type LabelSpec struct {
 }
 
 // EntrypointSpec sets the image config entrypoint (Dockerfile ENTRYPOINT).
-// Uses the same invocation fields as RunSpec (command / inline / script) but
-// emits image metadata rather than an llb exec.
+// Uses the same invocation fields as RunSpec (command / inline / script).
+// For script, the content is baked into the final image (unlike run.script,
+// which is a build-time-only mount that does not persist in layers).
 type EntrypointSpec struct {
 	Command string `yaml:"command,omitempty"` // exec-form argv (shlex-split; no /bin/sh -c)
 	Inline  string `yaml:"inline,omitempty"`  // shell-form entrypoint
-	Script  string `yaml:"script,omitempty"`  // not supported in v1alpha1 (run-only feature)
+	Script  string `yaml:"script,omitempty"`  // baked into image as the entrypoint executable
 	Extensions map[string]interface{} `yaml:",inline"`
 }
