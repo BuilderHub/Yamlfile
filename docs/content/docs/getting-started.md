@@ -82,6 +82,6 @@ See the [Secrets]({{< relref "/docs/features/secrets" >}}) page for details on f
 
 ## Next Steps
 
-- Read the [Syntax Reference]({{< relref "/docs/syntax-reference" >}}) for the full grammar.
+- Read the [Syntax Reference]({{< relref "/docs/syntax-reference" >}}) for the full syntax.
 - Look at [Examples]({{< relref "/docs/examples" >}}).
 - See [Development]({{< relref "/docs/development" >}}) for implementation details and contributor setup.

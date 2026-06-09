@@ -20,10 +20,10 @@ steps:
 ## How it works (without you writing a COPY)
 
 1. You list the script path in your Yamlfile.
-2. The frontend (at build-plan time) reads the file content from your build context (only the declared script path).
-3. It creates a tiny ephemeral scratch layer with the script content and executable permissions.
+2. Yamlfile reads the file content from your build context (only the script you declared).
+3. A temporary scratch layer is created with the script content and executable permissions.
 4. The script is mounted **read-only** into the `RUN` filesystem at a generated path (e.g. `/.yamlfile-script-...`).
-5. The frontend executes the script directly (or via `/bin/sh`).
+5. The script is executed directly (or via `/bin/sh`).
 
 Result: the script runs exactly as if it had been copied in, **but it never appears in any layer of the final image** unless you later explicitly `copy` it from the build stage.
 
@@ -45,6 +45,6 @@ Yamlfile:
     script: scripts/install-deps.sh
 ```
 
-Cleaner, and the frontend guarantees the temporary mount semantics.
+Much cleaner — Yamlfile takes care of the temporary mount for you.
 
 See also: [Secrets]({{< relref "/docs/features/secrets" >}}) (often used together with scripts that need credentials).

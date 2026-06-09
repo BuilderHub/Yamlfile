@@ -5,11 +5,11 @@ aliases:
   - /features/multi-file/
 ---
 
-> **Note**: Grammar + graph support for `builds:` exists for forward compatibility and so that external tools can see the declared structure. **Full runtime support is not yet implemented.** Only same-file sibling targets work for `from:` and `copy.from:` today. The claims and examples below describe the intended design; see the "Current status" callout.
+> **Note**: You can write `builds:` sections and use `component:target` references (e.g. `from: "torch:base"`) in your Yamlfile today. These will be accepted, but cross-file builds are not yet supported at runtime. Only targets defined in the *same* Yamlfile can be used with `from:` and `copy.from:`. The examples below show the intended future behavior.
 
 Multi-file orchestration will let a single top-level `Yamlfile` coordinate builds defined in other `Yamlfile`s (often in subdirectories) and then `copy` artifacts across them.
 
-## Intended `builds:` section (grammar only today)
+## Intended `builds:` section (not yet supported at runtime)
 
 ```yaml
 builds:
@@ -40,15 +40,15 @@ targets:
     dest: "/app/"
 ```
 
-The cross-file form (`from: "torch:base"`) is parsed and represented in the graph but not yet wired for loading.
+The cross-file form (`from: "torch:base"`) is accepted when you write your file. If you try to use one for an actual build, you will get a clear error explaining that cross-file builds are not supported yet.
 
-`from` may be omitted / set to empty or `"context"` to copy from the caller's original build context (supported).
+`from` may be omitted, left empty, or set to `"context"` to copy from the original build context (this works today).
 
 ## Current status
 
-See the prominent note at the top of the [Syntax Reference]({{< relref "/docs/syntax-reference#multi-file--orchestration-builds--grammar-only-not-yet-implemented" >}}).
+See the status box at the top of the [Syntax Reference]({{< relref "/docs/syntax-reference" >}}).
 
-In short: keep related targets in one Yamlfile for now. The dependency graph, cycle detection, and reachable set already handle multi-target single-file cases well today.
+In short: keep related targets in one Yamlfile for now. Targets within the same file work reliably with `from:` and `copy.from:`.
 
-When multi-file lands, the same `from:` / `copy.from:` syntax will just work across files.
+When full multi-file support lands, the same `from:` / `copy.from:` syntax will work across files.
 

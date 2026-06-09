@@ -99,6 +99,9 @@ func validateEntrypoint(tname string, idx int, e *EntrypointSpec) error {
 	if forms != 1 {
 		return fmt.Errorf("target %q entrypoint step %d must specify exactly one of: command, inline, or script", tname, idx)
 	}
+	if e.Script != "" {
+		return fmt.Errorf("target %q entrypoint step %d: script is not supported in v1alpha1 (script: is a run-only build-time mount mechanism; use command or inline)", tname, idx)
+	}
 	return nil
 }
 

@@ -8,7 +8,6 @@ package v1alpha1
 // (additive features will not break existing documents).
 type Yamlfile struct {
 	APIVersion string                 `yaml:"apiVersion"`
-	Kind       string                 `yaml:"kind,omitempty"`
 	Defaults   *Defaults              `yaml:"defaults,omitempty"`
 	Targets    map[string]TargetSpec  `yaml:"targets"`
 	Builds     map[string]BuildRef    `yaml:"builds,omitempty"`  // multi-file orchestration
@@ -38,8 +37,9 @@ type BuildRef struct {
 	Extensions map[string]interface{} `yaml:",inline"`
 }
 
-// Step is a discriminated union for pipeline steps. New kinds can be added
-// without breaking old parsers (unknown Kind will error in v1alpha1 but is captured).
+// Step is a discriminated union for pipeline steps. New step types can be added
+// without breaking old parsers (unknown step kinds will error in v1alpha1 but are captured
+// via the Extensions map).
 type Step struct {
 	Run        *RunSpec        `yaml:"run,omitempty"`
 	Copy       *CopySpec       `yaml:"copy,omitempty"`

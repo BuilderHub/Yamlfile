@@ -1,8 +1,10 @@
 // Package convert implements translation of Yamlfile v1alpha1 specs into
 // BuildKit LLB. It handles target dependency graphs (for parallelism and
-// pruning), RUN/COPY/ENV/ARG/WORKDIR steps, $VAR/${VAR} expansion (via
-// buildkit shell lexer) for env/arg/workdir values, baked-in script loading
-// (via temporary scratch + readonly mounts), and secure secret mounts (file or env forms).
+// pruning), RUN/COPY/ENV/ARG/WORKDIR/LABEL/ENTRYPOINT steps, $VAR/${VAR} expansion (via
+// buildkit shell lexer) for env/arg/workdir/label values, baked-in script loading
+// (via temporary scratch + readonly mounts), secure secret mounts (file or env forms),
+// and per-target/defaults platform selection (grammar fields now wired; client platform
+// is the final fallback).
 package convert
 
 //revive:disable:exported
@@ -15,6 +17,7 @@ import (
 	"strings"
 
 	"github.com/builderhub/yamlfile/pkg/spec/v1alpha1"
+	"github.com/containerd/platforms"
 	"github.com/moby/buildkit/client/llb"
 	"github.com/moby/buildkit/client/llb/sourceresolver"
 	"github.com/moby/buildkit/frontend/dockerfile/shell"
@@ -49,8 +52,10 @@ type Result struct {
 }
 
 // ToLLB builds the target graph for the requested target (or all) and returns the
-// final target state + config. For v1alpha1 MVP this is single-platform and serial
-// within a target; independent targets are prepared for parallelism by the caller.
+// final target state + config. Construction walks reachable targets in dependency order
+// (serial for determinism). The graph + parallelRoots helpers allow callers to execute
+// independent roots concurrently. Per-target and defaults.platform grammar fields are
+// honored (target.platform > defaults.platform > opt.Platform from client).
 func ToLLB(ctx context.Context, y *v1alpha1.Yamlfile, target string, opt ConvertOpt) (map[string]Result, error) {
 	deps, err := buildDependencyGraph(y)
 	if err != nil {
@@ -98,30 +103,59 @@ func ToLLB(ctx context.Context, y *v1alpha1.Yamlfile, target string, opt Convert
 	}
 	opt.Scripts = scripts
 
-	// For MVP we build serially in reachable order (which is post-order deps first).
-	// Parallel roots can be built concurrently by the frontend using errgroup (see step 7).
+	// Build in reachable order (post-order, deps first). Serial for determinism and
+	// simplicity; the resulting LLB is still parallelized by BuildKit at solve time.
+	// The parallelRoots helper + graph allow external concurrent execution of independent roots.
 	states := make(map[string]llb.State, len(reachable))
 	images := make(map[string]*ocispecs.Image, len(reachable))
 
 	for _, name := range reachable {
 		t := y.Targets[name]
+
+		// Effective platform for this target: target.platform (highest precedence) >
+		// defaults.platform > the platform supplied via ConvertOpt (from dockerui client).
+		// This wires the grammar fields that were previously parsed but ignored.
+		// Invalid platform strings are a hard error (user declared intent in the spec must be respected).
+		effPlat := opt.Platform
+		if y.Defaults != nil && y.Defaults.Platform != "" {
+			p, err := parsePlatform(y.Defaults.Platform)
+			if err != nil {
+				return nil, fmt.Errorf("defaults.platform for target %s: %w", name, err)
+			}
+			if p != nil {
+				effPlat = p
+			}
+		}
+		if t.Platform != "" {
+			p, err := parsePlatform(t.Platform)
+			if err != nil {
+				return nil, fmt.Errorf("platform for target %s: %w", name, err)
+			}
+			if p != nil {
+				effPlat = p
+			}
+		}
+
 		base := llb.Scratch()
 		if t.From != "" {
-			if isT, k := resolveBase(t.From, y.Targets); isT {
+			if isT, isCross, k := resolveBase(t.From, y.Targets, y.Builds); isT {
 				if st, ok := states[k]; ok {
 					base = st
 				} else {
 					return nil, fmt.Errorf("target %s depends on unknown or not-yet-built %s", name, t.From)
 				}
+			} else if isCross {
+				return nil, fmt.Errorf("cross-file reference %q (via builds:) is not yet supported (you can declare other Yamlfiles with `builds:`, but targets from them cannot be used with `from:` or `copy.from:` yet; keep everything in a single Yamlfile for now)", t.From)
 			} else if t.From == "scratch" {
 				base = llb.Scratch()
 			} else {
-				base = imageFromRef(t.From, opt)
+				// Real image ref (e.g. "golang:1.25", "alpine", "docker.io/foo:bar").
+				base = imageFromRef(t.From, opt, effPlat)
 			}
 		}
 
 		st := base
-		img := emptyImage(opt.Platform)
+		img := emptyImage(effPlat)
 
 		// Per-target variable context for $VAR / ${VAR} expansion inside env/arg/workdir values.
 		// Seeded from CLI build args (highest precedence for expansion), our synthetic base PATH,
@@ -138,7 +172,7 @@ func ToLLB(ctx context.Context, y *v1alpha1.Yamlfile, target string, opt Convert
 				currentVars[k] = v
 			}
 		}
-		if isT, k := resolveBase(t.From, y.Targets); isT && k != "scratch" {
+		if isT, _, k := resolveBase(t.From, y.Targets, y.Builds); isT && k != "scratch" {
 			if pimg, ok := images[k]; ok && pimg != nil {
 				// Inherit exact envs for expansion and make the child's starting image config correct.
 				img.Config.Env = append([]string{}, pimg.Config.Env...)
@@ -185,6 +219,12 @@ func ToLLB(ctx context.Context, y *v1alpha1.Yamlfile, target string, opt Convert
 					if f, err := expand(c.From, currentVars); err == nil && f != "" {
 						fromRef = f
 					}
+				}
+				// Detect cross-file refs (via builds:) *after* expansion so dynamic "comp:target"
+				// via args would also be caught. This completes grammar recognition for the
+				// declared surface (full loading/wiring of external Yamlfiles is future work).
+				if _, isCross, _ := resolveBase(fromRef, y.Targets, y.Builds); isCross {
+					return nil, fmt.Errorf("cross-file reference %q (via builds:) is not yet supported (you can declare other Yamlfiles with `builds:`, but targets from them cannot be used with `from:` or `copy.from:` yet; keep everything in a single Yamlfile for now)", fromRef)
 				}
 				c2 := *c
 				c2.From = fromRef
@@ -416,7 +456,7 @@ func sanitize(s string) string {
 
 func dispatchCopy(st llb.State, c *v1alpha1.CopySpec, states map[string]llb.State, opt ConvertOpt) (llb.State, error) {
 	if c.From == "" || c.From == "context" {
-		// context copy (MVP: rely on opt.Context if provided; otherwise no-op for smoke)
+		// context copy (rely on opt.Context if provided; otherwise no-op for smoke tests)
 		if opt.Context.Output() != nil {
 			for _, src := range c.Src {
 				st = st.File(llb.Copy(opt.Context, src, c.Dest, &llb.CopyInfo{CreateDestPath: true}))
@@ -505,10 +545,27 @@ func splitEnv(e string) (k, v string) {
 	return e, ""
 }
 
+// parsePlatform parses a platform string (e.g. "linux/amd64", "linux/arm64/v8") using
+// containerd/platforms (already a transitive dep via buildkit). Returns nil for empty
+// input. Errors are wrapped for clarity. Used to honor per-target and defaults.platform
+// grammar fields.
+func parsePlatform(s string) (*ocispecs.Platform, error) {
+	if s == "" {
+		return nil, nil
+	}
+	p, err := platforms.Parse(s)
+	if err != nil {
+		return nil, fmt.Errorf("invalid platform %q: %w", s, err)
+	}
+	return &p, nil
+}
+
 // BuildWithDockerUI is the high-level entry used by frontend/build.go.
 // It leverages dockerui for platforms/args/context and calls ToLLB.
+// Per-target platform overrides (and defaults) are applied inside ToLLB; the
+// platform(s) here serve as the fallback when no grammar platform is declared.
 func BuildWithDockerUI(ctx context.Context, dc *dockerui.Client, y *v1alpha1.Yamlfile, target string, c gwclient.Client) (map[string]Result, error) {
-	// For MVP we take first (or requested) platform
+	// Take first (or requested) as the base; ToLLB may override per grammar.
 	plats := dc.TargetPlatforms
 	if len(plats) == 0 {
 		plats = []ocispecs.Platform{{OS: "linux", Architecture: "amd64"}}
@@ -532,13 +589,17 @@ func BuildWithDockerUI(ctx context.Context, dc *dockerui.Client, y *v1alpha1.Yam
 	return ToLLB(ctx, y, target, opt)
 }
 
-func imageFromRef(ref string, opt ConvertOpt) llb.State {
+func imageFromRef(ref string, opt ConvertOpt, plat *ocispecs.Platform) llb.State {
 	opts := []llb.ImageOption{}
 	if opt.ImageMetaResolver != nil {
 		opts = append(opts, llb.WithMetaResolver(opt.ImageMetaResolver))
 	}
-	if opt.Platform != nil {
-		opts = append(opts, llb.Platform(*opt.Platform))
+	p := plat
+	if p == nil {
+		p = opt.Platform
+	}
+	if p != nil {
+		opts = append(opts, llb.Platform(*p))
 	}
 	return llb.Image(ref, opts...)
 }

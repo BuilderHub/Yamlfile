@@ -5,16 +5,16 @@ aliases:
   - /features/parallelism/
 ---
 
-When you define multiple top-level `targets` that do not depend on each other (no `from:` or `copy.from:` chain between them), the frontend can (and does) prepare them without artificial serialization.
+When you define multiple top-level `targets` that have no dependency on each other (no `from:` or `copy.from:` relationship), Yamlfile prepares them without forcing unnecessary ordering.
 
-The frontend builds a dependency map, computes the reachable set for the requested target, and provides parallel-root and reachable-ordering helpers.
+### What this means for your builds
 
-The actual execution parallelism comes from two places:
-1. The frontend constructing independent sub-DAGs (potentially concurrently).
-2. BuildKit's own solver running independent operations in parallel.
+- Targets that don't depend on one another won't block each other.
+- You don't have to do anything special. Just write your targets with clear dependencies using `from:` and `copy.from:`. Yamlfile figures out what can safely run in parallel.
+- BuildKit's execution engine also runs independent operations concurrently and takes advantage of caching.
 
-Today the build within a single requested target is still largely serial (for simplicity and determinism), but independent top-level targets are naturally parallelizable by the graph.
+If you request a specific target (with `--target`), only the targets it actually needs will be built. Independent "sibling" targets that aren't required are left alone.
 
-Future iterations may add explicit concurrent execution of independent roots inside one build request.
+This gives you natural parallelism for things like preparing multiple base stages or running unrelated setup steps, without the linear ordering problems common in large Dockerfiles.
 
-See the "MVP status" note in the [Syntax Reference]({{< relref "/docs/syntax-reference" >}}) for the current serial execution reality inside a single requested target (the graph prep is honest; the ToLLB path is intentionally serial today).
+See the status box in the [Syntax Reference]({{< relref "/docs/syntax-reference" >}}) for current limitations. Implementation details are in the [Development]({{< relref "/docs/development" >}}) page.

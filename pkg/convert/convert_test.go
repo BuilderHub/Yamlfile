@@ -149,3 +149,158 @@ func TestToLLB_LabelEntrypoint_Basic(t *testing.T) {
 		t.Errorf("unexpected entrypoint: %v", r.Image.Config.Entrypoint)
 	}
 }
+
+// TestToLLB_PlatformOverrides verifies that defaults.platform and per-target platform
+// (grammar fields) are wired: target.platform wins, then defaults, then opt fallback.
+// We assert on the resulting image config's Platform (the part that is exported).
+func TestToLLB_PlatformOverrides(t *testing.T) {
+	baseY := &spec.Yamlfile{
+		APIVersion: "v1alpha1",
+		Targets: map[string]spec.TargetSpec{
+			"base": {
+				From: "alpine:3.19",
+				Steps: []spec.Step{
+					{Run: &spec.RunSpec{Command: "true"}},
+				},
+			},
+		},
+	}
+
+	opt := ConvertOpt{
+		Platform: &ocispecs.Platform{OS: "linux", Architecture: "amd64"},
+		ScriptLoader: func(string) ([]byte, error) { return nil, nil },
+	}
+
+	var gotPlat ocispecs.Platform
+
+	// 1. default opt only
+	res, err := ToLLB(context.Background(), baseY, "base", opt)
+	if err != nil {
+		t.Fatalf("ToLLB (opt only): %v", err)
+	}
+	gotPlat = res["base"].Image.Platform
+	if gotPlat.Architecture != "amd64" {
+		t.Errorf("opt fallback: want amd64, got %s", gotPlat.Architecture)
+	}
+
+	// 2. defaults.platform
+	yDef := &spec.Yamlfile{
+		APIVersion: "v1alpha1",
+		Defaults:   &spec.Defaults{Platform: "linux/arm64"},
+		Targets:    baseY.Targets,
+	}
+	res, err = ToLLB(context.Background(), yDef, "base", opt)
+	if err != nil {
+		t.Fatalf("ToLLB (defaults): %v", err)
+	}
+	gotPlat = res["base"].Image.Platform
+	if gotPlat.Architecture != "arm64" {
+		t.Errorf("defaults.platform: want arm64, got %s", gotPlat.Architecture)
+	}
+
+	// 3. per-target overrides defaults
+	yTgt := &spec.Yamlfile{
+		APIVersion: "v1alpha1",
+		Defaults:   &spec.Defaults{Platform: "linux/arm64"},
+		Targets: map[string]spec.TargetSpec{
+			"base": {
+				From:     "alpine:3.19",
+				Platform: "linux/amd64/v3", // should win
+				Steps:    baseY.Targets["base"].Steps,
+			},
+		},
+	}
+	res, err = ToLLB(context.Background(), yTgt, "base", opt)
+	if err != nil {
+		t.Fatalf("ToLLB (target override): %v", err)
+	}
+	gotPlat = res["base"].Image.Platform
+	if gotPlat.Architecture != "amd64" || gotPlat.Variant != "v3" {
+		t.Errorf("target.platform: want amd64/v3, got %+v", gotPlat)
+	}
+}
+
+// TestToLLB_CrossFileRefError ensures that "comp:target" syntax (when comp is declared in builds:)
+// produces a clear "not yet supported" error instead of a confusing image pull or "unknown target".
+// This completes grammar recognition for the declared multi-file surface.
+func TestToLLB_CrossFileRefError(t *testing.T) {
+	y := &spec.Yamlfile{
+		APIVersion: "v1alpha1",
+		Builds: map[string]spec.BuildRef{
+			"torch": {File: "torch/Yamlfile", Target: "base"},
+		},
+		Targets: map[string]spec.TargetSpec{
+			"final": {
+				From: "torch:base", // cross
+				Steps: []spec.Step{
+					{Copy: &spec.CopySpec{From: "torch:base", Src: []string{"/x"}, Dest: "/x"}},
+				},
+			},
+		},
+	}
+	opt := ConvertOpt{
+		Platform: &ocispecs.Platform{OS: "linux", Architecture: "amd64"},
+		ScriptLoader: func(string) ([]byte, error) { return nil, nil },
+	}
+
+	_, err := ToLLB(context.Background(), y, "final", opt)
+	if err == nil || !strings.Contains(err.Error(), "cross-file reference") || !strings.Contains(err.Error(), "not yet supported") {
+		t.Errorf("expected cross-file not-yet-supported error, got: %v", err)
+	}
+}
+
+// TestToLLB_InvalidPlatformError verifies that malformed platform strings in the
+// grammar (defaults.platform or per-target platform) produce a clear error instead
+// of silent fallback. This is required for the platform wiring feature to be safe
+// and trustworthy (user-declared intent must not be silently ignored).
+func TestToLLB_InvalidPlatformError(t *testing.T) {
+	opt := ConvertOpt{
+		Platform: &ocispecs.Platform{OS: "linux", Architecture: "amd64"},
+		ScriptLoader: func(string) ([]byte, error) { return nil, nil },
+	}
+
+	cases := []struct {
+		name string
+		y    *spec.Yamlfile
+		want string // substring expected in error
+	}{
+		{
+			name: "syntactically invalid defaults.platform (incomplete specifier)",
+			y: &spec.Yamlfile{
+				APIVersion: "v1alpha1",
+				Defaults:   &spec.Defaults{Platform: "linux/"}, // known to fail Parse
+				Targets: map[string]spec.TargetSpec{
+					"t": {From: "scratch", Steps: []spec.Step{{Run: &spec.RunSpec{Command: "true"}}}},
+				},
+			},
+			want: "defaults.platform",
+		},
+		{
+			name: "syntactically invalid target.platform (too many segments)",
+			y: &spec.Yamlfile{
+				APIVersion: "v1alpha1",
+				Defaults:   &spec.Defaults{Platform: "linux/arm64"},
+				Targets: map[string]spec.TargetSpec{
+					"t": {
+						From:     "scratch",
+						Platform: "linux/amd64/extra/extra", // cannot parse
+						Steps:    []spec.Step{{Run: &spec.RunSpec{Command: "true"}}},
+					},
+				},
+			},
+			want: "platform for target t",
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			_, err := ToLLB(context.Background(), c.y, "t", opt)
+			if err == nil {
+				t.Fatalf("expected error for %s, got nil", c.name)
+			}
+			if !strings.Contains(err.Error(), "invalid platform") || !strings.Contains(err.Error(), c.want) {
+				t.Errorf("expected error containing 'invalid platform' and %q, got: %v", c.want, err)
+			}
+		})
+	}
+}
