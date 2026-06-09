@@ -1,15 +1,5 @@
 # syntax=ghcr.io/builderhub/yamlfile:latest
-#
-# Build the yamlfile BuildKit frontend image using yamlfile (dogfooding).
-# Bootstrap: requires an existing yamlfile image (see SYNTAX_IMAGE in Makefile).
-#
-#   docker buildx build -f cmd/yamlfile-frontend/Yamlfile \
-#     --build-arg BUILDKIT_SYNTAX=ghcr.io/builderhub/yamlfile:latest \
-#     --build-arg VERSION=v1alpha1-dev \
-#     -t ghcr.io/builderhub/yamlfile:dev --load .
-
 apiVersion: v1alpha1
-
 targets:
   build:
     from: golang:1.25-alpine3.23
@@ -25,15 +15,10 @@ targets:
           dest: "/src/"
       - run:
           command: apk add --no-cache git file
-      # golang puts go on PATH via image ENV; explicit PATH helps bootstrap against older frontends.
-      - env:
-          vars:
-            PATH: "/go/bin:/usr/local/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
       - run:
           script: cmd/yamlfile-frontend/scripts/build.sh
           env:
             CGO_ENABLED: "0"
-
   default:
     from: scratch
     steps:
