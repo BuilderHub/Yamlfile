@@ -284,7 +284,9 @@ When a target declares (or inherits via defaults) a platform:
 - The exported image config for the target records that platform.
 - Sibling `from:` targets use the state produced by the depended-on target (which may have used a different platform); the child's own platform governs its subsequent layers and final config.
 
-Variable expansion and most other steps are platform-agnostic. Building a single target for multiple platforms at once is not yet supported.
+Variable expansion and most other steps are platform-agnostic.
+
+When no `platform:` (on the target or via `defaults`) is declared for the built target, the platform(s) requested by the BuildKit client are used directly. This means `docker buildx build --platform linux/amd64,linux/arm64 ...` (and similar) will produce a proper multi-platform image when your Yamlfile omits platform declarations. When a platform *is* declared, that single platform is produced for the target (a multi-platform client request will typically produce the "multiple platforms requested but result is not multi-platform" warning, which accurately reflects that the Yamlfile recipe pinned a specific platform).
 
 ## Extensibility
 

@@ -3,8 +3,9 @@
 // pruning), RUN/COPY/ENV/ARG/WORKDIR/LABEL/ENTRYPOINT steps, $VAR/${VAR} expansion (via
 // buildkit shell lexer) for env/arg/workdir/label values, baked-in script loading
 // (via temporary scratch + readonly mounts), secure secret mounts (file or env forms),
-// and per-target/defaults platform selection (grammar fields now wired; client platform
-// is the final fallback).
+// and per-target/defaults platform selection (grammar fields now wired; client --platform
+// list is the final fallback and is honored for multi-platform output when the Yamlfile
+// declares no platform for the target).
 package convert
 
 //revive:disable:exported
@@ -581,33 +582,59 @@ func parsePlatform(s string) (*ocispecs.Platform, error) {
 	return &p, nil
 }
 
-// BuildWithDockerUI is the high-level entry used by frontend/build.go.
-// It leverages dockerui for platforms/args/context and calls ToLLB.
-// Per-target platform overrides (and defaults) are applied inside ToLLB; the
-// platform(s) here serve as the fallback when no grammar platform is declared.
-func BuildWithDockerUI(ctx context.Context, dc *dockerui.Client, y *v1alpha1.Yamlfile, target string, c gwclient.Client) (map[string]Result, error) {
-	// Take first (or requested) as the base; ToLLB may override per grammar.
-	plats := dc.TargetPlatforms
-	if len(plats) == 0 {
-		plats = []ocispecs.Platform{{OS: "linux", Architecture: "amd64"}}
+// BuildOneTargetPlatform sets up a ConvertOpt from the dockerui client (using the
+// explicit plat as the CLI fallback when no platform: is declared in the Yamlfile)
+// and returns only the Result for the requested target. It is the reusable helper
+// for per-platform callbacks when the caller (frontend) uses dockerui.Client.Build
+// to support multi-platform output. When plat is nil it falls back to dc's first
+// TargetPlatform (or the amd64 default) so that BuildWithDockerUI can delegate.
+func BuildOneTargetPlatform(ctx context.Context, dc *dockerui.Client, y *v1alpha1.Yamlfile, target string, plat *ocispecs.Platform, c gwclient.Client) (Result, error) {
+	if plat == nil {
+		plats := dc.TargetPlatforms
+		if len(plats) == 0 {
+			plats = []ocispecs.Platform{{OS: "linux", Architecture: "amd64"}}
+		}
+		p0 := plats[0]
+		plat = &p0
 	}
 	opt := ConvertOpt{
 		BuildArgs: dc.BuildArgs,
-		Platform:  &plats[0],
+		Platform:  plat,
 	}
 	if mc, err := dc.MainContext(ctx); err == nil && mc != nil {
 		opt.Context = *mc
 	}
 
-	// Provide a loader that will be called *inside* ToLLB only for scripts belonging
-	// to the reachable targets for the chosen `target`. This prevents failing a
-	// multi-target build because of a missing script in an unrelated target.
+	// ScriptLoader is provided so ToLLB can lazily load only the scripts needed by
+	// reachable targets for this (target, platform) combination.
 	opt.ScriptLoader = func(path string) ([]byte, error) {
 		return loadFileFromContext(ctx, dc, c, path)
 	}
 	opt.ImageMetaResolver = sourceresolver.NewImageMetaResolver(c)
 
-	return ToLLB(ctx, y, target, opt)
+	results, err := ToLLB(ctx, y, target, opt)
+	if err != nil {
+		return Result{}, err
+	}
+	r, ok := results[target]
+	if !ok {
+		return Result{}, fmt.Errorf("internal error: no result produced for target %q", target)
+	}
+	return r, nil
+}
+
+// BuildWithDockerUI is the high-level entry used by frontend/build.go for the
+// single-platform (or spec-forced single) case. It delegates to BuildOneTargetPlatform
+// (which picks the first CLI platform as fallback) and returns the map for the target
+// only (for backward compat with existing call sites and tests that call ToLLB directly).
+// Per-target platform overrides (and defaults) are applied inside ToLLB; the
+// platform(s) supplied here serve as the fallback when no grammar platform is declared.
+func BuildWithDockerUI(ctx context.Context, dc *dockerui.Client, y *v1alpha1.Yamlfile, target string, c gwclient.Client) (map[string]Result, error) {
+	r, err := BuildOneTargetPlatform(ctx, dc, y, target, nil, c)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]Result{target: r}, nil
 }
 
 func imageFromRef(ref string, opt ConvertOpt, plat *ocispecs.Platform) llb.State {

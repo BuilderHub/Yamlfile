@@ -106,5 +106,5 @@ Build with an override:
 docker buildx build ... --build-arg VERSION=1.2.3 ...
 ```
 
-More examples will be added in future releases (full multi-file orchestration and explicit multi-platform handling are on the roadmap).
+More examples will be added in future releases (full multi-file orchestration is on the roadmap). Client-driven multi-platform output (via `--platform` on the build command) is supported when the Yamlfile does not declare `platform:` or `defaults.platform` for the target.
 

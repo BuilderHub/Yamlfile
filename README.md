@@ -25,7 +25,7 @@ Inspired by the complexity of [coreweave/ml-containers](https://github.com/corew
 
 - Targets are always built in the order required by their dependencies.
 - Independent targets (ones that don't depend on each other) can run without being forced into a strict sequence.
-- Multi-platform builds are not yet supported (a single platform is used per build).
+- Multi-platform builds are supported when the target (and defaults) declare no `platform`. In that case the `--platform` value(s) from the client (e.g. `docker buildx build --platform linux/amd64,linux/arm64`) are honored and a multi-platform result is produced. When a platform is declared in the Yamlfile a single platform result is produced (CLI multi-platform requests will emit the normal warning).
 
 For the latest on planned features, see the status box in the [Syntax Reference](https://builderhub.github.io/Yamlfile/docs/syntax-reference/).
 
