@@ -25,7 +25,7 @@ func TestExpand_Basic(t *testing.T) {
 		{"${FOO}", "bar"},
 		{"${BASE}/bin", "/app/bin"},
 		{"/x:${PATH}", "/x:/usr/bin:/bin"},
-		{"$UNSET", ""},     // missing -> empty (Dockerfile-like)
+		{"$UNSET", ""}, // missing -> empty (Dockerfile-like)
 		{"${UNSET}", ""},
 	}
 	for _, c := range cases {
@@ -109,7 +109,7 @@ func TestToLLB_LabelEntrypoint_Basic(t *testing.T) {
 					{
 						Label: &spec.LabelSpec{
 							Vars: map[string]string{
-								"org.opencontainers.image.title": "yamlfile",
+								"org.opencontainers.image.title":      "yamlfile",
 								"moby.buildkit.frontend.network.none": "true",
 							},
 						},
@@ -215,7 +215,7 @@ func TestToLLB_PlatformOverrides(t *testing.T) {
 	}
 
 	opt := ConvertOpt{
-		Platform: &ocispecs.Platform{OS: "linux", Architecture: "amd64"},
+		Platform:     &ocispecs.Platform{OS: "linux", Architecture: "amd64"},
 		ScriptLoader: func(string) ([]byte, error) { return nil, nil },
 	}
 
@@ -287,7 +287,7 @@ func TestToLLB_CrossFileRefError(t *testing.T) {
 		},
 	}
 	opt := ConvertOpt{
-		Platform: &ocispecs.Platform{OS: "linux", Architecture: "amd64"},
+		Platform:     &ocispecs.Platform{OS: "linux", Architecture: "amd64"},
 		ScriptLoader: func(string) ([]byte, error) { return nil, nil },
 	}
 
@@ -303,7 +303,7 @@ func TestToLLB_CrossFileRefError(t *testing.T) {
 // and trustworthy (user-declared intent must not be silently ignored).
 func TestToLLB_InvalidPlatformError(t *testing.T) {
 	opt := ConvertOpt{
-		Platform: &ocispecs.Platform{OS: "linux", Architecture: "amd64"},
+		Platform:     &ocispecs.Platform{OS: "linux", Architecture: "amd64"},
 		ScriptLoader: func(string) ([]byte, error) { return nil, nil },
 	}
 
